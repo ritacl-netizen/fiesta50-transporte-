@@ -12,8 +12,10 @@
     body {
       font-family: 'Inter', -apple-system, sans-serif;
       height: 100vh;
+      height: 100dvh;
       overflow: hidden;
       color: #fff;
+      -webkit-tap-highlight-color: transparent;
     }
 
     #bg-video {
@@ -37,6 +39,7 @@
       align-items: center;
       justify-content: center;
       height: 100vh;
+      height: 100dvh;
       padding: 20px;
     }
 
@@ -126,6 +129,7 @@
     .qty-option {
       flex: 1;
       padding: 14px;
+      min-height: 48px;
       font-size: 1rem;
       font-family: 'Inter', sans-serif;
       font-weight: 500;
@@ -226,8 +230,12 @@
     }
 
     @media (max-width: 520px) {
-      .card { padding: 32px 24px; }
-      h1 { font-size: 1.2rem; }
+      .card { padding: 28px 20px; }
+      h1 { font-size: 1.2rem; letter-spacing: 4px; }
+      .route { font-size: 0.75rem; margin-bottom: 24px; }
+      input[type="text"] { font-size: 1.1rem; padding: 16px; }
+      button#submitBtn { padding: 16px 24px; font-size: 0.9rem; min-height: 50px; }
+      .qty-option { padding: 16px; min-height: 50px; }
     }
   </style>
 </head>
@@ -256,7 +264,7 @@
       </div>
 
       <div class="form-group">
-        <label>Cantidad</label>
+        <label>Cantidad lugares</label>
         <div class="qty-selector">
           <div class="qty-option selected" data-qty="1" onclick="selectQty(this)">1</div>
           <div class="qty-option" data-qty="2" onclick="selectQty(this)">2</div>
