@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transfer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      color: #fff;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #bg-video {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      z-index: -2;
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.15);
+      z-index: -1;
+    }
+
+    .container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      height: 100dvh;
+      padding: 20px;
+    }
+
+    .card {
+      text-align: center;
+      max-width: 420px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 40px 32px;
+      backdrop-filter: blur(12px);
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 300;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      opacity: 0.9;
+    }
+
+    .route {
+      font-size: 0.85rem;
+      font-weight: 400;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      opacity: 0.5;
+      margin-bottom: 32px;
+    }
+
+    .subtitle {
+      font-size: 0.95rem;
+      font-weight: 300;
+      margin-bottom: 28px;
+      opacity: 0.75;
+      line-height: 1.6;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      opacity: 0.5;
+      margin-bottom: 8px;
+      text-align: left;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 1rem;
+      font-family: 'Inter', sans-serif;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.3);
+      color: #fff;
+      outline: none;
+      transition: border-color 0.3s;
+      text-align: center;
+      letter-spacing: 3px;
+    }
+
+    input[type="text"]::placeholder {
+      color: rgba(255, 255, 255, 0.25);
+      letter-spacing: 1px;
+    }
+
+    input[type="text"]:focus {
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    /* Quantity selector */
+    .qty-selector {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .qty-option {
+      flex: 1;
+      padding: 14px;
+      min-height: 48px;
+      font-size: 1rem;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.3);
+      color: rgba(255, 255, 255, 0.6);
+      cursor: pointer;
+      transition: all 0.25s;
+    }
+
+    .qty-option:hover {
+      border-color: rgba(255, 255, 255, 0.3);
+      color: #fff;
+    }
+
+    .qty-option.selected {
+      border-color: rgba(255, 255, 255, 0.5);
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+
+    button#submitBtn {
+      width: 100%;
+      margin-top: 24px;
+      padding: 14px 24px;
+      font-size: 0.85rem;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    button#submitBtn:hover {
+      background: rgba(255, 255, 255, 0.18);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    button#submitBtn:active {
+      transform: scale(0.98);
+    }
+
+    button#submitBtn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .message {
+      margin-top: 20px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 400;
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .message.error {
+      background: rgba(220, 38, 38, 0.25);
+      border: 1px solid rgba(255, 100, 100, 0.2);
+      display: block;
+    }
+
+    .message.success {
+      background: rgba(22, 163, 74, 0.25);
+      border: 1px solid rgba(100, 255, 100, 0.2);
+      display: block;
+    }
+
+    .message.info {
+      background: rgba(37, 99, 235, 0.25);
+      border: 1px solid rgba(100, 150, 255, 0.2);
+      display: block;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 520px) {
+      .card { padding: 28px 20px; }
+      h1 { font-size: 1.2rem; letter-spacing: 4px; }
+      .route { font-size: 0.75rem; margin-bottom: 24px; }
+      input[type="text"] { font-size: 1.1rem; padding: 16px; }
+      button#submitBtn { padding: 16px 24px; font-size: 0.9rem; min-height: 50px; }
+      .qty-option { padding: 16px; min-height: 50px; }
+    }
+  </style>
+</head>
+<body>
+
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="../fire.mp4" type="video/mp4">
+  </video>
+
+  <div class="overlay"></div>
+
+  <div class="container">
+    <div class="card">
+      <h1>Transfer</h1>
+      <p class="route">Sofitel &mdash; Fiesta &mdash; Sofitel</p>
+
+      <div class="form-group">
+        <label>DNI o CI <span style="text-transform: none; letter-spacing: 0.5px; opacity: 0.7">(solo números)</span></label>
+        <input
+          type="text"
+          id="dniInput"
+          placeholder=""
+          autocomplete="off"
+          inputmode="numeric"
+        >
+      </div>
+
+      <div class="form-group">
+        <label>Cantidad lugares</label>
+        <div class="qty-selector">
+          <div class="qty-option selected" data-qty="1" onclick="selectQty(this)">1</div>
+          <div class="qty-option" data-qty="2" onclick="selectQty(this)">2</div>
+        </div>
+      </div>
+
+      <button id="submitBtn" onclick="submitForm()">Confirmar</button>
+
+      <div id="message" class="message"></div>
+    </div>
+  </div>
+
+  <script>
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzwPLGEkw5Rxe6HVlIp2Ks2-0fWXicOeyBMeuzxc9Q8WjOo8rK3riCMC1PHTFWYEh7q/exec';
+
+    const dniInput = document.getElementById('dniInput');
+    const submitBtn = document.getElementById('submitBtn');
+    const messageDiv = document.getElementById('message');
+    let selectedQty = 1;
+
+    function selectQty(el) {
+      document.querySelectorAll('.qty-option').forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedQty = parseInt(el.dataset.qty);
+    }
+
+    dniInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submitForm();
+    });
+
+    async function submitForm() {
+      const id = dniInput.value.trim();
+      messageDiv.className = 'message';
+      messageDiv.style.display = 'none';
+
+      if (!id) {
+        showMessage('Ingresá tu DNI o CI para continuar.', 'error');
+        dniInput.focus();
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner"></span> Verificando...';
+
+      try {
+        const response = await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({ id: id, qty: selectedQty }),
+          headers: { 'Content-Type': 'text/plain' },
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          showMessage(result.message, result.alreadyRegistered ? 'info' : 'success');
+          dniInput.value = '';
+        } else {
+          showMessage(result.message, 'error');
+        }
+      } catch (err) {
+        showMessage('Error de conexión. Intentá de nuevo.', 'error');
+      }
+
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = 'Confirmar';
+    }
+
+    function showMessage(text, type) {
+      messageDiv.textContent = text;
+      messageDiv.className = 'message ' + type;
+      messageDiv.style.display = 'block';
+    }
+  </script>
+
+</body>
+</html>
