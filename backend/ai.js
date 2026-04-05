@@ -3,58 +3,56 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const SYSTEM_PROMPT = `Sos un asistente virtual para la fiesta de cumpleaños 50 de Fede (MYN50).
-Tu tarea es interactuar con los invitados por WhatsApp de forma amigable y natural, en español rioplatense.
+Tu nombre es MYN50 Bot. Interactuas con los invitados por WhatsApp de forma amigable y natural, en español rioplatense.
 
-Tu rol principal es:
-1. Pedir una selfie a cada invitado para poder identificarlos en las fotos del evento
+Lo que haces:
+1. Pedirle una selfie al invitado para poder identificarlo en las fotos del evento
 2. Aceptar fotos de la fiesta que los invitados quieran compartir
-3. Pedir el numero de WhatsApp de la pareja del invitado (si tiene) para contactarla directamente
+3. Si el invitado tiene pareja registrada y no tenemos su telefono, pedirle el numero de WhatsApp de la pareja
 4. Responder preguntas generales sobre la fiesta
 
+Info de la fiesta:
+- La fiesta es en Punta del Este
+- Hay transporte ida y vuelta desde el Sofitel. Se registran en myn50.com/transfer
+- Las fotos personalizadas se ven en myn50.com/fotografias
+
 Reglas:
-- Se breve y amigable. Maximo 2-3 oraciones por mensaje.
+- Se breve y amigable. Maximo 2-3 oraciones.
 - Usa español rioplatense (vos, che, dale, etc.)
 - No uses emojis en exceso, maximo 1-2 por mensaje
 - Si te preguntan algo que no sabes, deciles que consulten con Fede o los organizadores
-- La fiesta es en Punta del Este, con transporte desde el Sofitel
-- Para el transporte, pueden registrarse en myn50.com/transfer
 
-Vas a recibir el contexto del invitado y debes responder con un JSON:
+Vas a recibir el contexto del invitado y debes responder SOLO con un JSON:
 {
-  "message": "texto para enviar al invitado",
-  "action": "none" | "request_selfie" | "request_partner_phone" | "accept_photo" | "done"
+  "message": "texto para enviar al invitado"
 }
 
-Solo responde con el JSON, sin texto adicional.`;
+Solo responde con el JSON, sin texto adicional ni markdown.`;
 
-// Conversation history per phone (keep last 10 messages)
+// Conversation history per phone (keep last 10 exchanges)
 const histories = new Map();
 
 async function generateResponse(phone, guestContext, userMessage, messageType) {
   try {
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
+      model: "gemini-2.5-flash",
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 256,
-        responseMimeType: "application/json",
+        maxOutputTokens: 500,
       },
+      systemInstruction: SYSTEM_PROMPT,
     });
 
-    // Build context
-    const context = `
-Contexto del invitado:
+    const context = `Contexto del invitado:
 - Nombre: ${guestContext.name}
 - Tiene selfie: ${guestContext.hasSelfie ? "SI" : "NO"}
 - Tiene pareja: ${guestContext.partnerName || "NO"}
 - Pareja tiene selfie: ${guestContext.partnerHasSelfie ? "SI" : "NO"}
 - Pareja tiene telefono registrado: ${guestContext.partnerHasPhone ? "SI" : "NO"}
-- Fotos enviadas: ${guestContext.photosCount || 0}
-- Estado actual: ${guestContext.state || "nuevo"}
+- Estado: ${guestContext.state || "normal"}
 
 Mensaje del invitado (tipo: ${messageType}): ${userMessage}`;
 
-    // Get or create history
     let history = histories.get(phone) || [];
 
     const chat = model.startChat({
@@ -62,11 +60,10 @@ Mensaje del invitado (tipo: ${messageType}): ${userMessage}`;
         role: h.role,
         parts: [{ text: h.text }],
       })),
-      systemInstruction: SYSTEM_PROMPT,
     });
 
     const result = await chat.sendMessage(context);
-    const responseText = result.response.text();
+    const responseText = result.response.text().trim();
 
     // Update history (keep last 10 exchanges)
     history.push({ role: "user", text: context });
@@ -74,19 +71,32 @@ Mensaje del invitado (tipo: ${messageType}): ${userMessage}`;
     if (history.length > 20) history = history.slice(-20);
     histories.set(phone, history);
 
-    const parsed = JSON.parse(responseText);
-    return {
-      message: parsed.message,
-      action: parsed.action || "none",
-    };
+    console.log("[AI] Raw response:", responseText.substring(0, 300));
+
+    // Parse JSON response - try multiple extraction methods
+    let msg = null;
+
+    // Try direct JSON parse
+    try {
+      const cleaned = responseText.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      const parsed = JSON.parse(cleaned);
+      msg = parsed.message;
+    } catch (e) {
+      // Try extracting JSON from response
+      const jsonMatch = responseText.match(/\{[\s\S]*"message"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+      if (jsonMatch) {
+        msg = jsonMatch[1].replace(/\\n/g, "\n").replace(/\\"/g, '"');
+      } else {
+        // Last resort: use the raw text as the message
+        msg = responseText.replace(/```json\n?/g, "").replace(/```\n?/g, "").replace(/^\{?\s*"message"\s*:\s*"?/i, "").replace(/"?\s*\}?\s*$/i, "").trim();
+      }
+    }
+
+    return msg || null;
   } catch (error) {
-    console.error("AI generation error:", error);
-    return null; // Caller should use fallback
+    console.error("[AI] Error:", error.message);
+    return null; // Caller uses fallback
   }
 }
 
-function clearHistory(phone) {
-  histories.delete(phone);
-}
-
-module.exports = { generateResponse, clearHistory };
+module.exports = { generateResponse };

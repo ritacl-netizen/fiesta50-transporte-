@@ -6,6 +6,7 @@ const sheets = require("./sheets");
 const r2 = require("./r2");
 const rekognition = require("./rekognition");
 const mappings = require("./mappings");
+const ai = require("./ai");
 
 const app = express();
 app.use(express.json());
@@ -119,34 +120,47 @@ async function processMessage(from, messageType, message, mediaUrl) {
   // Handle text messages
   if (messageType === "text") {
     const text = (message.text?.body || "").trim();
-    const textLower = text.toLowerCase();
 
     // Check if they're sending a phone number for their partner
     if (state === "AWAITING_PARTNER_PHONE") {
       const phoneMatch = text.replace(/[\s\-\(\)\.+]/g, "");
       if (phoneMatch.length >= 8) {
         await sheets.setPartnerPhone(guest.rowIndex, phoneMatch);
-        conversationState.set(from, "COLLECTING_PHOTOS");
+        conversationState.delete(from);
         await kapso.sendTextMessage(
           from,
-          `Perfecto! Ya tengo el numero de ${guest.partnerName}. Le voy a escribir para pedirle su selfie.\n\nMientras tanto, si tenes fotos de la fiesta podes mandarmelas y las sumo al album de todos!`
+          `Perfecto! Ya tengo el numero de ${guest.partnerName}. Le voy a escribir para pedirle su selfie.`
         );
-        await requestSelfie(phoneMatch, guest.partnerName);
+        try {
+          await requestSelfie(phoneMatch, guest.partnerName);
+        } catch (e) {
+          console.log(`Could not message partner: ${e.message}`);
+        }
         return;
       }
     }
 
-    // Default responses
-    if (!hasSelfie) {
-      await kapso.sendTextMessage(
-        from,
-        `Hola ${name}! Mandame una selfie tuya para armar tu album personalizado de fotos de la fiesta.`
-      );
+    // Use Gemini for natural response
+    const guestContext = {
+      name,
+      hasSelfie,
+      partnerName: guest.partnerName,
+      partnerHasSelfie: guest.selfiePartner,
+      partnerHasPhone: !!guest.partnerPhone,
+      state: state || (hasSelfie ? "tiene_selfie" : "sin_selfie"),
+    };
+
+    const aiResponse = await ai.generateResponse(from, guestContext, text, "text");
+
+    if (aiResponse) {
+      await kapso.sendTextMessage(from, aiResponse);
     } else {
-      await kapso.sendTextMessage(
-        from,
-        `Hola ${name}! Ya tengo tu selfie. Si tenes fotos de la fiesta, mandalas y las sumo al album de todos!`
-      );
+      // Fallback if AI fails
+      if (!hasSelfie) {
+        await kapso.sendTextMessage(from, `Hola ${name}! Mandame una selfie tuya para armar tu album personalizado de fotos de la fiesta.`);
+      } else {
+        await kapso.sendTextMessage(from, `Hola ${name}! Ya tengo tu selfie. Si tenes fotos de la fiesta, mandalas y las sumo al album de todos!`);
+      }
     }
     return;
   }
@@ -175,24 +189,28 @@ async function handleSelfieReceived(from, message, guest, isPartner, name, media
 
     await sheets.markSelfieReceived(guest.rowIndex, isPartner);
 
-    await kapso.sendTextMessage(
-      from,
-      `Recibida tu selfie, ${name}! Despues de la fiesta te mando el link a tu album personalizado.\n\nSi tenes fotos de la fiesta, mandalas y las sumo al album de todos!`
-    );
+    // Generate AI response for selfie confirmation
+    const selfieContext = {
+      name,
+      hasSelfie: true,
+      partnerName: guest.partnerName,
+      partnerHasSelfie: guest.selfiePartner,
+      partnerHasPhone: !!guest.partnerPhone,
+      state: "selfie_recibida",
+    };
+    const aiMsg = await ai.generateResponse(from, selfieContext, "[El invitado acaba de mandar su selfie]", "selfie_received");
+    await kapso.sendTextMessage(from, aiMsg || `Recibida tu selfie, ${name}! Si tenes fotos de la fiesta, mandalas y las sumo al album de todos!`);
 
-    if (!isPartner && guest.partnerName && !guest.selfiePartner) {
-      if (guest.partnerPhone) {
-        try {
-          await requestSelfie(guest.partnerPhone, guest.partnerName);
-        } catch (e) {
-          console.log(`Could not message partner ${guest.partnerName}: ${e.message}`);
-        }
-      } else {
-        conversationState.set(from, "AWAITING_PARTNER_PHONE");
-        await kapso.sendTextMessage(
-          from,
-          `Tambien necesito una selfie de ${guest.partnerName} para armarle su album. Pasame su numero de WhatsApp asi le escribo directamente.`
-        );
+    // Ask for partner phone if needed
+    if (!isPartner && guest.partnerName && !guest.selfiePartner && !guest.partnerPhone) {
+      conversationState.set(from, "AWAITING_PARTNER_PHONE");
+      const partnerMsg = await ai.generateResponse(from, selfieContext, `[Necesitamos el telefono de ${guest.partnerName} para pedirle su selfie]`, "need_partner_phone");
+      await kapso.sendTextMessage(from, partnerMsg || `Tambien necesito una selfie de ${guest.partnerName}. Pasame su numero de WhatsApp asi le escribo.`);
+    } else if (!isPartner && guest.partnerName && !guest.selfiePartner && guest.partnerPhone) {
+      try {
+        await requestSelfie(guest.partnerPhone, guest.partnerName);
+      } catch (e) {
+        console.log(`Could not message partner ${guest.partnerName}: ${e.message}`);
       }
     }
   } catch (error) {
