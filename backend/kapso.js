@@ -24,16 +24,14 @@ async function sendImageMessage(to, imageUrl, caption) {
   });
 }
 
-async function downloadMedia(mediaId) {
-  const buffer = await client.media.download({
-    mediaId,
-    phoneNumberId,
-  });
-  return Buffer.from(buffer);
+async function downloadMediaFromUrl(url) {
+  const res = await fetch(url, { redirect: "follow" });
+  if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+  return Buffer.from(await res.arrayBuffer());
 }
 
 module.exports = {
   sendTextMessage,
   sendImageMessage,
-  downloadMedia,
+  downloadMediaFromUrl,
 };

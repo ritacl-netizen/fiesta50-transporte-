@@ -26,27 +26,34 @@ app.get("/webhook", (req, res) => {
   res.sendStatus(403);
 });
 
-// Conversation states per phone number:
-// - AWAITING_PARTNER_PHONE: waiting for partner's phone number
-// - COLLECTING_PHOTOS: accepting party photos from guest
+// Conversation states per phone number
 const conversationState = new Map();
-
-// Track photo counts in memory per phone
 const photoCounters = new Map();
 
-// Kapso webhook (POST) - incoming messages
+// Kapso v2 webhook (POST)
 app.post("/webhook", async (req, res) => {
   res.sendStatus(200);
 
   try {
-    const entries = req.body.entry || [];
-    for (const entry of entries) {
-      const changes = entry.changes || [];
-      for (const change of changes) {
-        const value = change.value;
-        if (!value || !value.messages) continue;
-        for (const message of value.messages) {
-          await handleIncomingMessage(message, value.metadata);
+    const body = req.body;
+
+    // Kapso v2 format: { message, conversation, phone_number_id }
+    if (body.message) {
+      await handleKapsoMessage(body.message, body.conversation);
+      return;
+    }
+
+    // Meta forward format (fallback): { object, entry[] }
+    if (body.entry) {
+      const entries = body.entry || [];
+      for (const entry of entries) {
+        const changes = entry.changes || [];
+        for (const change of changes) {
+          const value = change.value;
+          if (!value || !value.messages) continue;
+          for (const msg of value.messages) {
+            await handleMetaMessage(msg);
+          }
         }
       }
     }
@@ -55,12 +62,32 @@ app.post("/webhook", async (req, res) => {
   }
 });
 
-async function handleIncomingMessage(message, metadata) {
+// Handle Kapso v2 format message
+async function handleKapsoMessage(message, conversation) {
+  // Skip outbound messages (echoes of our own messages)
+  if (message.kapso?.direction === "outbound") return;
+
+  const from = message.from;
+  const messageType = message.type;
+  const mediaUrl = message.kapso?.media_url || message.image?.link;
+
+  console.log(`[Kapso] Message from ${from}, type: ${messageType}`);
+
+  await processMessage(from, messageType, message, mediaUrl);
+}
+
+// Handle Meta forward format message
+async function handleMetaMessage(message) {
   const from = message.from;
   const messageType = message.type;
 
-  console.log(`Message from ${from}, type: ${messageType}`);
+  console.log(`[Meta] Message from ${from}, type: ${messageType}`);
 
+  await processMessage(from, messageType, message, null);
+}
+
+// Shared message processing logic
+async function processMessage(from, messageType, message, mediaUrl) {
   const guest = await sheets.findGuestByPhone(from);
   if (!guest) {
     await kapso.sendTextMessage(
@@ -78,16 +105,16 @@ async function handleIncomingMessage(message, metadata) {
   // Handle photo messages
   if (messageType === "image") {
     if (!hasSelfie) {
-      await handleSelfieReceived(from, message, guest, isPartner, name);
+      await handleSelfieReceived(from, message, guest, isPartner, name, mediaUrl);
     } else {
-      await handleGuestPhotoReceived(from, message, guest, isPartner, name);
+      await handleGuestPhotoReceived(from, message, guest, isPartner, name, mediaUrl);
     }
     return;
   }
 
   // Handle text messages
   if (messageType === "text") {
-    const text = message.text.body.trim();
+    const text = (message.text?.body || "").trim();
     const textLower = text.toLowerCase();
 
     // Check if they're sending a phone number for their partner
@@ -100,13 +127,11 @@ async function handleIncomingMessage(message, metadata) {
           from,
           `Perfecto! Ya tengo el numero de ${guest.partnerName}. Le voy a escribir para pedirle su selfie.\n\nMientras tanto, si tenes fotos de la fiesta podes mandarmelas y las sumo al album de todos!`
         );
-        const partnerPhone = phoneMatch.replace(/[\s\-\(\)\.+]/g, "");
-        await requestSelfie(partnerPhone, guest.partnerName);
+        await requestSelfie(phoneMatch, guest.partnerName);
         return;
       }
     }
 
-    // If they say "listo"/"fin"/"ya" while collecting photos
     if (state === "COLLECTING_PHOTOS" && ["listo", "fin", "ya", "termine"].includes(textLower)) {
       conversationState.delete(from);
       await kapso.sendTextMessage(
@@ -132,9 +157,7 @@ async function handleIncomingMessage(message, metadata) {
   }
 }
 
-async function handleSelfieReceived(from, message, guest, isPartner, name) {
-  const mediaId = message.image.id;
-
+async function handleSelfieReceived(from, message, guest, isPartner, name, mediaUrl) {
   try {
     let guestId = guest.guestId;
     if (!guestId) {
@@ -144,12 +167,15 @@ async function handleSelfieReceived(from, message, guest, isPartner, name) {
 
     const personId = isPartner ? generateGuestId(guest.partnerName) : guestId;
 
-    const mediaBuffer = await kapso.downloadMedia(mediaId);
+    // Download image from Kapso media URL or via media ID
+    const mediaBuffer = mediaUrl
+      ? await kapso.downloadMediaFromUrl(mediaUrl)
+      : await kapso.downloadMediaFromUrl(message.image?.link || message.image?.url);
+
     const url = await r2.uploadSelfie(personId, mediaBuffer);
     console.log(`Selfie saved for ${name}: ${url}`);
 
     await sheets.markSelfieReceived(guest.rowIndex, isPartner);
-
     conversationState.set(from, "COLLECTING_PHOTOS");
 
     await kapso.sendTextMessage(
@@ -157,7 +183,6 @@ async function handleSelfieReceived(from, message, guest, isPartner, name) {
       `Recibida tu selfie, ${name}! Despues de la fiesta te mando el link a tu album personalizado.\n\nSi tenes fotos de la fiesta, mandalas y las sumo al album de todos!`
     );
 
-    // If main guest has a partner without selfie, ask for phone or request directly
     if (!isPartner && guest.partnerName && !guest.selfiePartner) {
       if (guest.partnerPhone) {
         await requestSelfie(guest.partnerPhone, guest.partnerName);
@@ -178,9 +203,7 @@ async function handleSelfieReceived(from, message, guest, isPartner, name) {
   }
 }
 
-async function handleGuestPhotoReceived(from, message, guest, isPartner, name) {
-  const mediaId = message.image.id;
-
+async function handleGuestPhotoReceived(from, message, guest, isPartner, name, mediaUrl) {
   try {
     const counter = (photoCounters.get(from) || 0) + 1;
     photoCounters.set(from, counter);
@@ -188,13 +211,15 @@ async function handleGuestPhotoReceived(from, message, guest, isPartner, name) {
     const timestamp = Date.now();
     const photoId = `guest-${from}-${timestamp}-${counter}`;
 
-    const mediaBuffer = await kapso.downloadMedia(mediaId);
+    const mediaBuffer = mediaUrl
+      ? await kapso.downloadMediaFromUrl(mediaUrl)
+      : await kapso.downloadMediaFromUrl(message.image?.link || message.image?.url);
+
     const url = await r2.uploadGuestPhoto(photoId, mediaBuffer);
     console.log(`Guest photo saved from ${name}: ${url}`);
 
     await sheets.incrementPhotoCount(guest.rowIndex, isPartner);
 
-    // Confirm first photo, then every 5th photo (avoid spam)
     if (counter === 1) {
       await kapso.sendTextMessage(
         from,
