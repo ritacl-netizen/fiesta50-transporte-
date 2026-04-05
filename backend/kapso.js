@@ -25,7 +25,11 @@ async function sendImageMessage(to, imageUrl, caption) {
 }
 
 async function downloadMedia(mediaId) {
-  return client.media.download(mediaId);
+  const buffer = await client.media.download({
+    mediaId,
+    phoneNumberId,
+  });
+  return Buffer.from(buffer);
 }
 
 module.exports = {
