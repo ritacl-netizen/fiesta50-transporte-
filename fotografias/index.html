@@ -531,8 +531,8 @@
         const totalWa = allPhotos.whatsapp.length;
         const totalPro = allPhotos.pro.length;
         document.getElementById('count-all').textContent = totalWa + totalPro;
-        document.getElementById('count-whatsapp').textContent = totalWa;
-        document.getElementById('count-pro').textContent = totalPro;
+        document.getElementById('count-whatsapp').textContent = totalWa || '(proximamente)';
+        document.getElementById('count-pro').textContent = totalPro || '(proximamente)';
 
         document.getElementById('loading').style.display = 'none';
         setFilter('all');
