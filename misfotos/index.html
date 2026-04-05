@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mis Fotos</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .login-card {
+      width: 90%;
+      max-width: 380px;
+      padding: 2.5rem 2rem;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      text-align: center;
+    }
+    .login-card h1 {
+      font-size: 1.8rem;
+      font-weight: 300;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+    .login-card p.subtitle {
+      font-size: 0.85rem;
+      opacity: 0.4;
+      margin-bottom: 2rem;
+    }
+    .field {
+      margin-bottom: 1rem;
+      text-align: left;
+    }
+    .field label {
+      display: block;
+      font-size: 0.75rem;
+      opacity: 0.5;
+      margin-bottom: 0.4rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .field input {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .field input:focus {
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+    .field input::placeholder {
+      color: rgba(255, 255, 255, 0.25);
+    }
+    .submit-btn {
+      width: 100%;
+      padding: 0.85rem;
+      margin-top: 0.5rem;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9rem;
+      cursor: pointer;
+      letter-spacing: 0.03em;
+      transition: background 0.2s;
+    }
+    .submit-btn:hover { background: rgba(255, 255, 255, 0.2); }
+    .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .error-msg {
+      margin-top: 1rem;
+      font-size: 0.8rem;
+      color: #ff6b6b;
+      display: none;
+    }
+    .album-view { display: none; }
+    .album-header {
+      text-align: center;
+      padding: 3rem 2rem 1rem;
+    }
+    .album-header .guest-name {
+      font-size: 2.5rem;
+      font-weight: 300;
+      letter-spacing: 0.05em;
+    }
+    .album-header .photo-count {
+      font-size: 0.85rem;
+      opacity: 0.4;
+      margin-top: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .download-all-link {
+      color: inherit;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    .photo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 4px;
+      padding: 1rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .photo-item {
+      position: relative;
+      aspect-ratio: 1;
+      overflow: hidden;
+      cursor: pointer;
+      background: #1a1a1a;
+      border-radius: 2px;
+    }
+    .photo-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+    .photo-item:hover img { transform: scale(1.05); }
+    .photo-item .download-icon {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      width: 32px;
+      height: 32px;
+      background: rgba(0, 0, 0, 0.6);
+      border: none;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+    }
+    .photo-item .download-icon:hover { background: rgba(0, 0, 0, 0.8); }
+    .lightbox {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .lightbox.active { display: flex; }
+    .lightbox img { max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius: 4px; }
+    .lightbox .close-btn {
+      position: absolute; top: 1.5rem; right: 1.5rem;
+      width: 40px; height: 40px;
+      background: rgba(255,255,255,0.1); border: none; border-radius: 50%;
+      color: #fff; font-size: 1.5rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .lightbox .nav-btn {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      width: 50px; height: 50px;
+      background: rgba(255,255,255,0.1); border: none; border-radius: 50%;
+      color: #fff; font-size: 1.5rem; cursor: pointer;
+    }
+    .lightbox .nav-btn.prev { left: 1.5rem; }
+    .lightbox .nav-btn.next { right: 1.5rem; }
+    .lightbox .download-btn {
+      position: absolute; bottom: 1.5rem; right: 1.5rem;
+      width: 48px; height: 48px;
+      background: rgba(255,255,255,0.2); border: none; border-radius: 50%;
+      color: #fff; font-size: 1.5rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .lightbox .counter {
+      position: absolute; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+      font-size: 0.85rem; opacity: 0.5;
+    }
+    @media (max-width: 600px) {
+      .photo-grid { grid-template-columns: repeat(2, 1fr); gap: 2px; padding: 2px; }
+      .album-header .guest-name { font-size: 1.8rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-card" id="login-view">
+    <h1>Mis Fotos</h1>
+    <p class="subtitle">Ingresa tus datos para ver tu album</p>
+    <div class="field">
+      <label>DNI o CI</label>
+      <input type="text" id="dni" placeholder="Solo numeros" inputmode="numeric">
+    </div>
+    <div class="field">
+      <label>Ultimos 4 digitos de tu celular</label>
+      <input type="text" id="last4" placeholder="Ej: 5002" inputmode="numeric" maxlength="4">
+    </div>
+    <button class="submit-btn" id="login-btn" onclick="doLogin()">Ingresar</button>
+    <p class="error-msg" id="error-msg"></p>
+  </div>
+  <div class="album-view" id="album-view">
+    <div class="album-header">
+      <h1 class="guest-name" id="guest-name"></h1>
+      <p class="photo-count"><span id="photo-count"></span> <a href="#" class="download-all-link" id="download-all" style="display:none" onclick="downloadAllPhotos(); return false;">(descargar todas)</a></p>
+    </div>
+    <div class="photo-grid" id="photo-grid"></div>
+  </div>
+  <div class="lightbox" id="lightbox">
+    <button class="close-btn" onclick="closeLightbox()">&times;</button>
+    <button class="nav-btn prev" onclick="navigateLightbox(-1)">&#8249;</button>
+    <img id="lightbox-img" src="" alt="">
+    <button class="nav-btn next" onclick="navigateLightbox(1)">&#8250;</button>
+    <button class="download-btn" onclick="downloadCurrentPhoto()">&#8681;</button>
+    <span class="counter" id="lightbox-counter"></span>
+  </div>
+  <script>
+    const API_URL = "https://fiesta50-fotos-723746235838.us-central1.run.app";
+    const R2_URL = "https://pub-b1b3bdad9e3742a7a323d65bf8f0436a.r2.dev";
+    const MAPPINGS_URL = R2_URL + "/data/mappings.json";
+    let currentPhotos = [];
+    let currentIndex = 0;
+    async function doLogin() {
+      const dni = document.getElementById("dni").value.trim();
+      const last4 = document.getElementById("last4").value.trim();
+      const btn = document.getElementById("login-btn");
+      const errEl = document.getElementById("error-msg");
+      errEl.style.display = "none";
+      if (!dni || !last4 || last4.length !== 4) {
+        errEl.textContent = "Completa ambos campos (4 digitos del celular)";
+        errEl.style.display = "block";
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = "Verificando...";
+      try {
+        const res = await fetch(API_URL + "/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dni, last4 })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          errEl.textContent = data.error || "Error al verificar";
+          errEl.style.display = "block";
+          return;
+        }
+        loadAlbum(data.name, data.guestId);
+      } catch (e) {
+        errEl.textContent = "Error de conexion. Intenta de nuevo.";
+        errEl.style.display = "block";
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Ingresar";
+      }
+    }
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Enter" && document.getElementById("login-view").style.display !== "none") doLogin();
+    });
+    async function loadAlbum(name, guestId) {
+      document.getElementById("login-view").style.display = "none";
+      document.getElementById("album-view").style.display = "block";
+      document.body.style.alignItems = "flex-start";
+      document.getElementById("guest-name").textContent = name;
+      try {
+        const res = await fetch(MAPPINGS_URL);
+        const data = await res.json();
+        const photos = data.guest_to_photos[guestId] || [];
+        if (photos.length === 0) {
+          document.getElementById("photo-count").textContent = "Aun no hay fotos disponibles";
+          return;
+        }
+        document.getElementById("photo-count").textContent = photos.length + " fotos";
+        document.getElementById("download-all").style.display = "inline";
+        currentPhotos = photos;
+        renderPhotoGrid(photos);
+      } catch (e) {
+        document.getElementById("photo-count").textContent = "Error al cargar fotos";
+      }
+    }
+    function renderPhotoGrid(photos) {
+      const grid = document.getElementById("photo-grid");
+      grid.innerHTML = "";
+      photos.forEach(function(photoId, index) {
+        const item = document.createElement("div");
+        item.className = "photo-item";
+        const img = document.createElement("img");
+        img.src = R2_URL + "/party/" + photoId + ".jpg";
+        img.alt = "Foto " + (index + 1);
+        img.loading = "lazy";
+        img.addEventListener("click", function() { openLightbox(index); });
+        const dlBtn = document.createElement("button");
+        dlBtn.className = "download-icon";
+        dlBtn.innerHTML = "&#8681;";
+        dlBtn.addEventListener("click", function(e) { e.stopPropagation(); downloadPhoto(photoId, index); });
+        item.appendChild(img);
+        item.appendChild(dlBtn);
+        grid.appendChild(item);
+      });
+    }
+    function openLightbox(index) {
+      currentIndex = index;
+      document.getElementById("lightbox-img").src = R2_URL + "/party/" + currentPhotos[index] + ".jpg";
+      document.getElementById("lightbox-counter").textContent = (index + 1) + " / " + currentPhotos.length;
+      document.getElementById("lightbox").classList.add("active");
+      document.body.style.overflow = "hidden";
+    }
+    function closeLightbox() {
+      document.getElementById("lightbox").classList.remove("active");
+      document.body.style.overflow = "";
+    }
+    function navigateLightbox(dir) {
+      currentIndex = (currentIndex + dir + currentPhotos.length) % currentPhotos.length;
+      document.getElementById("lightbox-img").src = R2_URL + "/party/" + currentPhotos[currentIndex] + ".jpg";
+      document.getElementById("lightbox-counter").textContent = (currentIndex + 1) + " / " + currentPhotos.length;
+    }
+    document.addEventListener("keydown", function(e) {
+      if (!document.getElementById("lightbox").classList.contains("active")) return;
+      if (e.key === "Escape") closeLightbox();
+      if (e.key === "ArrowLeft") navigateLightbox(-1);
+      if (e.key === "ArrowRight") navigateLightbox(1);
+    });
+    var touchStartX = 0;
+    document.addEventListener("touchstart", function(e) { touchStartX = e.changedTouches[0].screenX; });
+    document.addEventListener("touchend", function(e) {
+      if (!document.getElementById("lightbox").classList.contains("active")) return;
+      var diff = e.changedTouches[0].screenX - touchStartX;
+      if (Math.abs(diff) > 50) navigateLightbox(diff > 0 ? -1 : 1);
+    });
+    function downloadPhoto(photoId, index) {
+      var a = document.createElement("a");
+      a.href = API_URL + "/api/download/" + photoId;
+      a.download = "foto-" + (index + 1) + ".jpg";
+      a.click();
+    }
+    function downloadCurrentPhoto() { downloadPhoto(currentPhotos[currentIndex], currentIndex); }
+    function downloadAllPhotos() {
+      var btn = document.getElementById("download-all");
+      btn.textContent = "(descargando...)";
+      var i = 0;
+      function next() {
+        if (i >= currentPhotos.length) { btn.textContent = "(descargar todas)"; return; }
+        downloadPhoto(currentPhotos[i], i);
+        i++;
+        setTimeout(next, 800);
+      }
+      next();
+    }
+  </script>
+</body>
+</html>
