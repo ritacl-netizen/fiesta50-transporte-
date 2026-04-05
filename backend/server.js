@@ -68,6 +68,8 @@ app.post("/webhook", async (req, res) => {
 async function handleKapsoMessage(message, conversation) {
   // Skip outbound messages (echoes of our own messages)
   if (message.kapso?.direction === "outbound") return;
+  // Skip status-only webhooks (no actual message content)
+  if (!message.type) return;
 
   const from = message.from;
   const messageType = message.type;
@@ -180,7 +182,11 @@ async function handleSelfieReceived(from, message, guest, isPartner, name, media
 
     if (!isPartner && guest.partnerName && !guest.selfiePartner) {
       if (guest.partnerPhone) {
-        await requestSelfie(guest.partnerPhone, guest.partnerName);
+        try {
+          await requestSelfie(guest.partnerPhone, guest.partnerName);
+        } catch (e) {
+          console.log(`Could not message partner ${guest.partnerName}: ${e.message}`);
+        }
       } else {
         conversationState.set(from, "AWAITING_PARTNER_PHONE");
         await kapso.sendTextMessage(
