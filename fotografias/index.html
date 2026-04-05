@@ -11,9 +11,8 @@
 
     body {
       font-family: 'Inter', -apple-system, sans-serif;
-      height: 100vh;
-      height: 100dvh;
-      overflow: hidden;
+      min-height: 100vh;
+      min-height: 100dvh;
       color: #fff;
       -webkit-tap-highlight-color: transparent;
     }
@@ -30,11 +29,12 @@
       position: fixed;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.15);
+      background: rgba(0, 0, 0, 0.4);
       z-index: -1;
     }
 
-    .container {
+    /* --- LOGIN --- */
+    .login-container {
       display: flex;
       align-items: center;
       justify-content: center;
@@ -72,9 +72,7 @@
       margin-bottom: 28px;
     }
 
-    .form-group {
-      margin-bottom: 16px;
-    }
+    .form-group { margin-bottom: 16px; }
 
     label {
       display: block;
@@ -87,11 +85,7 @@
       text-align: left;
     }
 
-    label .hint {
-      text-transform: none;
-      letter-spacing: 0.5px;
-      opacity: 0.7;
-    }
+    label .hint { text-transform: none; letter-spacing: 0.5px; opacity: 0.7; }
 
     input[type="text"] {
       width: 100%;
@@ -108,14 +102,7 @@
       letter-spacing: 3px;
     }
 
-    input[type="text"]::placeholder {
-      color: rgba(255, 255, 255, 0.25);
-      letter-spacing: 1px;
-    }
-
-    input[type="text"]:focus {
-      border-color: rgba(255, 255, 255, 0.4);
-    }
+    input[type="text"]:focus { border-color: rgba(255, 255, 255, 0.4); }
 
     button.btn {
       width: 100%;
@@ -134,35 +121,20 @@
       transition: all 0.3s;
     }
 
-    button.btn:hover {
-      background: rgba(255, 255, 255, 0.18);
-      border-color: rgba(255, 255, 255, 0.4);
-    }
-
+    button.btn:hover { background: rgba(255, 255, 255, 0.18); border-color: rgba(255, 255, 255, 0.4); }
     button.btn:active { transform: scale(0.98); }
-    button.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    button.btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
     .message {
       margin-top: 20px;
       padding: 12px 16px;
       border-radius: 10px;
       font-size: 0.9rem;
-      font-weight: 400;
       display: none;
       animation: fadeIn 0.3s ease;
     }
 
-    .message.error {
-      background: rgba(220, 38, 38, 0.25);
-      border: 1px solid rgba(255, 100, 100, 0.2);
-      display: block;
-    }
-
-    .message.success {
-      background: rgba(22, 163, 74, 0.25);
-      border: 1px solid rgba(100, 255, 100, 0.2);
-      display: block;
-    }
+    .message.error { background: rgba(220, 38, 38, 0.25); border: 1px solid rgba(255, 100, 100, 0.2); display: block; }
 
     .spinner {
       display: inline-block;
@@ -173,67 +145,6 @@
       animation: spin 0.7s linear infinite;
       vertical-align: middle;
       margin-right: 8px;
-    }
-
-    /* Sections view (shown after login) */
-    #sections {
-      display: none;
-    }
-
-    .sections-title {
-      font-size: 1.4rem;
-      font-weight: 300;
-      letter-spacing: 6px;
-      text-transform: uppercase;
-      margin-bottom: 8px;
-      opacity: 0.9;
-    }
-
-    .sections-greeting {
-      font-size: 0.9rem;
-      font-weight: 400;
-      opacity: 0.5;
-      margin-bottom: 32px;
-    }
-
-    .section-links {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .section-link {
-      display: block;
-      text-align: center;
-      padding: 20px 24px;
-      text-decoration: none;
-      color: #fff;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.06);
-      transition: all 0.3s ease;
-    }
-
-    .section-link:hover {
-      background: rgba(255, 255, 255, 0.14);
-      border-color: rgba(255, 255, 255, 0.35);
-      transform: translateY(-2px);
-    }
-
-    .section-link:active { transform: scale(0.98); }
-
-    .section-link .section-name {
-      font-size: 0.85rem;
-      font-weight: 500;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      margin-bottom: 6px;
-    }
-
-    .section-link .section-desc {
-      font-size: 0.78rem;
-      font-weight: 300;
-      opacity: 0.5;
     }
 
     .back-link {
@@ -249,6 +160,174 @@
 
     .back-link:hover { opacity: 1; color: #fff; }
 
+    /* --- GALLERY --- */
+    #gallery-view {
+      display: none;
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+
+    .gallery-header {
+      text-align: center;
+      padding: 2.5rem 1.5rem 1rem;
+    }
+
+    .gallery-header h1 {
+      font-size: 1.6rem;
+      margin-bottom: 4px;
+    }
+
+    .gallery-greeting {
+      font-size: 0.9rem;
+      font-weight: 400;
+      opacity: 0.5;
+      margin-bottom: 1.5rem;
+    }
+
+    /* Filters */
+    .filters {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      padding: 0 1rem;
+    }
+
+    .filter-btn {
+      padding: 8px 20px;
+      font-size: 0.75rem;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.06);
+      color: rgba(255, 255, 255, 0.6);
+      cursor: pointer;
+      transition: all 0.25s;
+      backdrop-filter: blur(8px);
+    }
+
+    .filter-btn:hover {
+      border-color: rgba(255, 255, 255, 0.35);
+      color: #fff;
+    }
+
+    .filter-btn.active {
+      background: rgba(255, 255, 255, 0.18);
+      border-color: rgba(255, 255, 255, 0.5);
+      color: #fff;
+    }
+
+    .filter-count {
+      font-weight: 300;
+      opacity: 0.6;
+      margin-left: 4px;
+    }
+
+    /* Photo grid */
+    .photo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 4px;
+      padding: 0 4px 4rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .photo-item {
+      position: relative;
+      aspect-ratio: 1;
+      overflow: hidden;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 3px;
+    }
+
+    .photo-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      opacity: 0;
+    }
+
+    .photo-item img.loaded { opacity: 1; }
+    .photo-item:hover img { transform: scale(1.05); }
+
+    .no-photos {
+      text-align: center;
+      padding: 4rem 2rem;
+      opacity: 0.5;
+      font-size: 0.95rem;
+    }
+
+    .loading-gallery {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4rem;
+      font-size: 0.9rem;
+      opacity: 0.5;
+    }
+
+    .loading-gallery .spinner { margin-right: 12px; }
+
+    /* Lightbox */
+    .lightbox {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .lightbox.active { display: flex; }
+
+    .lightbox img {
+      max-width: 90vw;
+      max-height: 90vh;
+      object-fit: contain;
+      border-radius: 4px;
+    }
+
+    .lightbox .close-btn {
+      position: absolute;
+      top: 1.5rem; right: 1.5rem;
+      width: 44px; height: 44px;
+      background: rgba(255, 255, 255, 0.1);
+      border: none; border-radius: 50%;
+      color: #fff; font-size: 1.5rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .lightbox .nav-btn {
+      position: absolute;
+      top: 50%; transform: translateY(-50%);
+      width: 50px; height: 50px;
+      background: rgba(255, 255, 255, 0.1);
+      border: none; border-radius: 50%;
+      color: #fff; font-size: 1.5rem;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+    }
+
+    .lightbox .nav-btn.prev { left: 1.5rem; }
+    .lightbox .nav-btn.next { right: 1.5rem; }
+
+    .lightbox .counter {
+      position: absolute;
+      bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+      font-size: 0.85rem; opacity: 0.5;
+    }
+
     @keyframes spin { to { transform: rotate(360deg); } }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(8px); }
@@ -257,9 +336,14 @@
 
     @media (max-width: 520px) {
       .card { padding: 28px 20px; }
-      h1, .sections-title { font-size: 1.2rem; letter-spacing: 4px; }
+      h1 { font-size: 1.2rem; letter-spacing: 4px; }
       input[type="text"] { font-size: 1.1rem; padding: 16px; }
       button.btn { padding: 16px 24px; font-size: 0.9rem; min-height: 50px; }
+      .photo-grid { grid-template-columns: repeat(2, 1fr); gap: 2px; padding: 0 2px 4rem; }
+      .filter-btn { padding: 7px 14px; font-size: 0.7rem; letter-spacing: 1.5px; }
+      .lightbox .nav-btn { width: 40px; height: 40px; font-size: 1.2rem; }
+      .lightbox .nav-btn.prev { left: 0.5rem; }
+      .lightbox .nav-btn.next { right: 0.5rem; }
     }
   </style>
 </head>
@@ -271,149 +355,273 @@
 
   <div class="overlay"></div>
 
-  <div class="container">
-    <!-- Login form -->
-    <div class="card" id="login-card">
+  <!-- LOGIN -->
+  <div class="login-container" id="login-view">
+    <div class="card">
       <h1>Fotografias</h1>
       <p class="subtitle">Ingresa tus datos</p>
 
       <div class="form-group">
         <label>CI <span class="hint">(solo numeros)</span></label>
-        <input
-          type="text"
-          id="ciInput"
-          autocomplete="off"
-          inputmode="numeric"
-        >
+        <input type="text" id="ciInput" autocomplete="off" inputmode="numeric">
       </div>
 
       <div class="form-group">
         <label>Ultimos 4 digitos del celular</label>
-        <input
-          type="text"
-          id="phoneInput"
-          maxlength="4"
-          autocomplete="off"
-          inputmode="numeric"
-        >
+        <input type="text" id="phoneInput" maxlength="4" autocomplete="off" inputmode="numeric">
       </div>
 
       <button class="btn" id="loginBtn" onclick="login()">Ingresar</button>
-
       <div id="message" class="message"></div>
-
-      <a href="/" class="back-link">Volver</a>
-    </div>
-
-    <!-- Sections (shown after login) -->
-    <div class="card" id="sections" style="display:none">
-      <p class="sections-title">Fotografias</p>
-      <p class="sections-greeting" id="greeting"></p>
-
-      <div class="section-links">
-        <a href="#" class="section-link" id="link-whatsapp">
-          <div class="section-name">Fotos via WhatsApp</div>
-          <div class="section-desc">Fotos compartidas por los invitados</div>
-        </a>
-        <a href="#" class="section-link" id="link-pro">
-          <div class="section-name">Fotos Pro</div>
-          <div class="section-desc">Fotos de los fotografos profesionales</div>
-        </a>
-      </div>
-
       <a href="/" class="back-link">Volver</a>
     </div>
   </div>
 
+  <!-- GALLERY -->
+  <div id="gallery-view">
+    <div class="gallery-header">
+      <h1>MYN50</h1>
+      <p class="gallery-greeting" id="greeting"></p>
+
+      <div class="filters">
+        <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">
+          Todas <span class="filter-count" id="count-all"></span>
+        </button>
+        <button class="filter-btn" data-filter="whatsapp" onclick="setFilter('whatsapp')">
+          WhatsApp <span class="filter-count" id="count-whatsapp"></span>
+        </button>
+        <button class="filter-btn" data-filter="pro" onclick="setFilter('pro')">
+          Pro <span class="filter-count" id="count-pro"></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="loading-gallery" id="loading">
+      <span class="spinner"></span> Cargando fotos...
+    </div>
+
+    <div class="no-photos" id="no-photos" style="display:none"></div>
+
+    <div class="photo-grid" id="photo-grid"></div>
+
+    <div style="text-align:center; padding: 1rem 0 3rem;">
+      <a href="/" class="back-link">Volver</a>
+    </div>
+  </div>
+
+  <!-- LIGHTBOX -->
+  <div class="lightbox" id="lightbox">
+    <button class="close-btn" onclick="closeLightbox()">&times;</button>
+    <button class="nav-btn prev" onclick="navigateLightbox(-1)">&#8249;</button>
+    <img id="lightbox-img" src="" alt="">
+    <button class="nav-btn next" onclick="navigateLightbox(1)">&#8250;</button>
+    <span class="counter" id="lightbox-counter"></span>
+  </div>
+
   <script>
-    // TODO: Replace with deployed Apps Script URL for FotosAuth
     const FOTOS_AUTH_URL = 'https://script.google.com/macros/s/AKfycbwrMxMdxCuE5F4xSbxd9d2tssWC559hFrvwRF4YQkC2sx9JJbwkrtMEvWFR3g4gV9rHCQ/exec';
+    const R2_URL = 'https://pub-b1b3bdad9e3742a7a323d65bf8f0436a.r2.dev';
+    const MAPPINGS_URL = '../data/mappings.json';
 
-    const ciInput = document.getElementById('ciInput');
-    const phoneInput = document.getElementById('phoneInput');
-    const loginBtn = document.getElementById('loginBtn');
-    const messageDiv = document.getElementById('message');
+    let allPhotos = { whatsapp: [], pro: [] };
+    let currentFilter = 'all';
+    let currentPhotos = [];
+    let currentIndex = 0;
 
-    // Check if already logged in
+    // Check session
     const saved = sessionStorage.getItem('myn50_guest');
     if (saved) {
-      showSections(JSON.parse(saved));
+      showGallery(JSON.parse(saved));
     }
 
-    // Enter key navigation
-    ciInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') phoneInput.focus();
+    // Login
+    document.getElementById('ciInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('phoneInput').focus();
     });
-    phoneInput.addEventListener('keydown', (e) => {
+    document.getElementById('phoneInput').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') login();
     });
 
     async function login() {
-      const ci = ciInput.value.trim();
-      const phone4 = phoneInput.value.trim();
-      messageDiv.className = 'message';
-      messageDiv.style.display = 'none';
+      const ci = document.getElementById('ciInput').value.trim();
+      const phone4 = document.getElementById('phoneInput').value.trim();
+      const msg = document.getElementById('message');
+      msg.className = 'message'; msg.style.display = 'none';
 
-      if (!ci) {
-        showMessage('Ingresa tu CI para continuar.', 'error');
-        ciInput.focus();
-        return;
-      }
+      if (!ci || !/^\d+$/.test(ci)) { showMsg('CI: solo numeros.', 'error'); return; }
+      if (!/^\d{4}$/.test(phone4)) { showMsg('Ingresa 4 digitos.', 'error'); return; }
 
-      if (!/^\d+$/.test(ci)) {
-        showMessage('CI: solo numeros, sin puntos ni espacios.', 'error');
-        ciInput.focus();
-        return;
-      }
-
-      if (!phone4 || phone4.length !== 4 || !/^\d{4}$/.test(phone4)) {
-        showMessage('Ingresa los ultimos 4 digitos de tu celular.', 'error');
-        phoneInput.focus();
-        return;
-      }
-
-      loginBtn.disabled = true;
-      loginBtn.innerHTML = '<span class="spinner"></span> Verificando...';
+      const btn = document.getElementById('loginBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Verificando...';
 
       try {
-        const url = `${FOTOS_AUTH_URL}?ci=${encodeURIComponent(ci)}&phone4=${encodeURIComponent(phone4)}`;
-        const response = await fetch(url);
-        const result = await response.json();
-
+        const res = await fetch(`${FOTOS_AUTH_URL}?ci=${ci}&phone4=${phone4}`);
+        const result = await res.json();
         if (result.success) {
-          const guest = {
-            name: result.name,
-            guestId: result.guestId,
-            ci: ci
-          };
+          const guest = { name: result.name, guestId: result.guestId };
           sessionStorage.setItem('myn50_guest', JSON.stringify(guest));
-          showSections(guest);
+          showGallery(guest);
         } else {
-          showMessage(result.message, 'error');
+          showMsg(result.message, 'error');
         }
-      } catch (err) {
-        showMessage('Error de conexion. Intenta de nuevo.', 'error');
+      } catch (e) {
+        showMsg('Error de conexion.', 'error');
       }
 
-      loginBtn.disabled = false;
-      loginBtn.innerHTML = 'Ingresar';
+      btn.disabled = false;
+      btn.innerHTML = 'Ingresar';
     }
 
-    function showSections(guest) {
-      document.getElementById('login-card').style.display = 'none';
-      document.getElementById('sections').style.display = 'block';
+    function showMsg(text, type) {
+      const el = document.getElementById('message');
+      el.textContent = text;
+      el.className = 'message ' + type;
+      el.style.display = 'block';
+    }
+
+    // Gallery
+    async function showGallery(guest) {
+      document.getElementById('login-view').style.display = 'none';
+      document.getElementById('gallery-view').style.display = 'block';
       document.getElementById('greeting').textContent = `Hola, ${guest.name}`;
+      document.body.style.overflow = 'auto';
 
-      const guestId = guest.guestId;
-      document.getElementById('link-whatsapp').href = `/album/?source=whatsapp&id=${guestId}`;
-      document.getElementById('link-pro').href = `/album/?source=pro&id=${guestId}`;
+      try {
+        const res = await fetch(MAPPINGS_URL);
+        const data = await res.json();
+        const guestData = data.guest_to_photos[guest.guestId];
+
+        if (!guestData) {
+          allPhotos = { whatsapp: [], pro: [] };
+        } else if (Array.isArray(guestData)) {
+          allPhotos = { whatsapp: guestData, pro: [] };
+        } else {
+          allPhotos = {
+            whatsapp: guestData.whatsapp || [],
+            pro: guestData.pro || [],
+          };
+        }
+
+        // Update counts
+        const totalWa = allPhotos.whatsapp.length;
+        const totalPro = allPhotos.pro.length;
+        document.getElementById('count-all').textContent = totalWa + totalPro;
+        document.getElementById('count-whatsapp').textContent = totalWa;
+        document.getElementById('count-pro').textContent = totalPro;
+
+        document.getElementById('loading').style.display = 'none';
+        setFilter('all');
+      } catch (e) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('no-photos').style.display = 'block';
+        document.getElementById('no-photos').textContent = 'Error al cargar las fotos.';
+      }
     }
 
-    function showMessage(text, type) {
-      messageDiv.textContent = text;
-      messageDiv.className = 'message ' + type;
-      messageDiv.style.display = 'block';
+    function setFilter(filter) {
+      currentFilter = filter;
+
+      // Update active button
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector(`.filter-btn[data-filter="${filter}"]`).classList.add('active');
+
+      // Build photo list with source info
+      let photos = [];
+      if (filter === 'all' || filter === 'whatsapp') {
+        photos = photos.concat(allPhotos.whatsapp.map(id => ({ id, source: 'whatsapp', prefix: 'party-whatsapp' })));
+      }
+      if (filter === 'all' || filter === 'pro') {
+        photos = photos.concat(allPhotos.pro.map(id => ({ id, source: 'pro', prefix: 'party-pro' })));
+      }
+
+      currentPhotos = photos;
+
+      if (photos.length === 0) {
+        document.getElementById('photo-grid').innerHTML = '';
+        document.getElementById('no-photos').style.display = 'block';
+        document.getElementById('no-photos').textContent = 'No hay fotos en esta categoria todavia.';
+      } else {
+        document.getElementById('no-photos').style.display = 'none';
+        renderGrid(photos);
+      }
     }
+
+    function renderGrid(photos) {
+      const grid = document.getElementById('photo-grid');
+      grid.innerHTML = '';
+
+      photos.forEach((photo, index) => {
+        const item = document.createElement('div');
+        item.className = 'photo-item';
+
+        const img = document.createElement('img');
+        img.dataset.src = `${R2_URL}/${photo.prefix}/${photo.id}.jpg`;
+        img.alt = `Foto ${index + 1}`;
+        img.loading = 'lazy';
+        img.addEventListener('load', () => img.classList.add('loaded'));
+        img.addEventListener('click', () => openLightbox(index));
+
+        item.appendChild(img);
+        grid.appendChild(item);
+      });
+
+      // Lazy load
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const img = entry.target;
+            if (img.dataset.src) {
+              img.src = img.dataset.src;
+              img.removeAttribute('data-src');
+              observer.unobserve(img);
+            }
+          }
+        });
+      }, { rootMargin: '300px' });
+
+      grid.querySelectorAll('img[data-src]').forEach(img => observer.observe(img));
+    }
+
+    // Lightbox
+    function openLightbox(index) {
+      currentIndex = index;
+      const lb = document.getElementById('lightbox');
+      const img = document.getElementById('lightbox-img');
+      const photo = currentPhotos[index];
+      img.src = `${R2_URL}/${photo.prefix}/${photo.id}.jpg`;
+      document.getElementById('lightbox-counter').textContent = `${index + 1} / ${currentPhotos.length}`;
+      lb.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.remove('active');
+      document.body.style.overflow = 'auto';
+    }
+
+    function navigateLightbox(dir) {
+      currentIndex = (currentIndex + dir + currentPhotos.length) % currentPhotos.length;
+      const photo = currentPhotos[currentIndex];
+      document.getElementById('lightbox-img').src = `${R2_URL}/${photo.prefix}/${photo.id}.jpg`;
+      document.getElementById('lightbox-counter').textContent = `${currentIndex + 1} / ${currentPhotos.length}`;
+    }
+
+    // Keyboard + swipe
+    document.addEventListener('keydown', (e) => {
+      if (!document.getElementById('lightbox').classList.contains('active')) return;
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowLeft') navigateLightbox(-1);
+      if (e.key === 'ArrowRight') navigateLightbox(1);
+    });
+
+    let touchStartX = 0;
+    document.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
+    document.addEventListener('touchend', (e) => {
+      if (!document.getElementById('lightbox').classList.contains('active')) return;
+      const diff = e.changedTouches[0].screenX - touchStartX;
+      if (Math.abs(diff) > 50) navigateLightbox(diff > 0 ? -1 : 1);
+    });
   </script>
 
 </body>
