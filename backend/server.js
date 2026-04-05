@@ -298,6 +298,23 @@ function generateGuestId(name) {
 
 // --- API endpoints ---
 
+// CORS for frontend
+app.use("/api", (req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET");
+  next();
+});
+
+// Serve mappings.json live from backend
+app.get("/api/mappings", (req, res) => {
+  try {
+    const data = mappings.load();
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get("/api/status", async (req, res) => {
   try {
     const guests = await sheets.getAllGuests();

@@ -461,7 +461,8 @@
   <script>
     const FOTOS_AUTH_URL = 'https://script.google.com/macros/s/AKfycbwrMxMdxCuE5F4xSbxd9d2tssWC559hFrvwRF4YQkC2sx9JJbwkrtMEvWFR3g4gV9rHCQ/exec';
     const R2_URL = 'https://pub-b1b3bdad9e3742a7a323d65bf8f0436a.r2.dev';
-    const MAPPINGS_URL = '../data/mappings.json';
+    const BACKEND_URL = 'https://lamprophyric-sherly-inclinational.ngrok-free.dev';
+    const MAPPINGS_STATIC = '../data/mappings.json';
 
     let allPhotos = { whatsapp: [], pro: [] };
     let currentFilter = 'all';
@@ -528,8 +529,14 @@
       document.body.style.overflow = 'auto';
 
       try {
-        const res = await fetch(MAPPINGS_URL);
-        const data = await res.json();
+        let data;
+        try {
+          const res = await fetch(`${BACKEND_URL}/api/mappings`);
+          data = await res.json();
+        } catch (e) {
+          const res = await fetch(MAPPINGS_STATIC);
+          data = await res.json();
+        }
         const guestData = data.guest_to_photos[guest.guestId];
 
         if (!guestData) {
