@@ -287,7 +287,7 @@ async function matchPhotoInBackground(photoId, source, photoBuffer) {
     const matchedGuests = await rekognition.matchPhoto(photoBuffer, selfieIds);
 
     if (matchedGuests.length > 0) {
-      mappings.addMatch(photoId, source, matchedGuests);
+      await mappings.addMatch(photoId, source, matchedGuests);
       console.log(`[Rekognition] Photo ${photoId} matched: ${matchedGuests.join(", ")}`);
     } else {
       console.log(`[Rekognition] Photo ${photoId}: no matches`);
@@ -330,9 +330,9 @@ app.use("/api", (req, res, next) => {
 });
 
 // Serve mappings.json live from backend
-app.get("/api/mappings", (req, res) => {
+app.get("/api/mappings", async (req, res) => {
   try {
-    const data = mappings.load();
+    const data = await mappings.load();
     res.json(data);
   } catch (error) {
     res.status(500).json({ error: error.message });

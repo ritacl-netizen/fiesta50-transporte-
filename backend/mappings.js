@@ -1,33 +1,39 @@
-const fs = require("fs");
-const path = require("path");
+const r2 = require("./r2");
 
-const MAPPINGS_PATH = path.join(__dirname, "..", "data", "mappings.json");
+const MAPPINGS_KEY = "data/mappings.json";
 
-function load() {
+// In-memory cache
+let cache = null;
+
+async function load() {
+  if (cache) return cache;
+
   try {
-    return JSON.parse(fs.readFileSync(MAPPINGS_PATH, "utf8"));
+    const buf = await r2.getFile(MAPPINGS_KEY);
+    cache = JSON.parse(buf.toString());
+    return cache;
   } catch (e) {
-    return {
+    cache = {
       photo_to_guests: { whatsapp: {}, pro: {} },
       guest_to_photos: {},
       stats: {},
     };
+    return cache;
   }
 }
 
-function save(data) {
-  fs.writeFileSync(MAPPINGS_PATH, JSON.stringify(data, null, 2));
+async function save(data) {
+  cache = data;
+  await r2.uploadFile(MAPPINGS_KEY, Buffer.from(JSON.stringify(data, null, 2)), "application/json");
 }
 
 // Add a photo match for a guest
-function addMatch(photoId, source, guestIds) {
-  const data = load();
+async function addMatch(photoId, source, guestIds) {
+  const data = await load();
 
-  // Ensure structure
   if (!data.photo_to_guests[source]) data.photo_to_guests[source] = {};
   data.photo_to_guests[source][photoId] = guestIds;
 
-  // Update reverse mapping
   for (const guestId of guestIds) {
     if (!data.guest_to_photos[guestId]) data.guest_to_photos[guestId] = {};
     if (!data.guest_to_photos[guestId][source]) data.guest_to_photos[guestId][source] = [];
@@ -36,14 +42,8 @@ function addMatch(photoId, source, guestIds) {
     }
   }
 
-  save(data);
+  await save(data);
   return data;
 }
 
-// Get all guest IDs that have selfies (for matching)
-function getAllGuestIds() {
-  const data = load();
-  return Object.keys(data.guest_to_photos);
-}
-
-module.exports = { load, save, addMatch, getAllGuestIds };
+module.exports = { load, save, addMatch };
