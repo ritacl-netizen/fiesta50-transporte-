@@ -132,15 +132,6 @@ async function processMessage(from, messageType, message, mediaUrl) {
       }
     }
 
-    if (state === "COLLECTING_PHOTOS" && ["listo", "fin", "ya", "termine"].includes(textLower)) {
-      conversationState.delete(from);
-      await kapso.sendTextMessage(
-        from,
-        `Gracias ${name}! Despues de la fiesta te mando el link a tu album personalizado.`
-      );
-      return;
-    }
-
     // Default responses
     if (!hasSelfie) {
       await kapso.sendTextMessage(
@@ -150,7 +141,7 @@ async function processMessage(from, messageType, message, mediaUrl) {
     } else {
       await kapso.sendTextMessage(
         from,
-        `Hola ${name}! Ya tengo tu selfie. Si tenes fotos de la fiesta, mandalas y las sumo al album de todos! Cuando termines, manda "listo".`
+        `Hola ${name}! Ya tengo tu selfie. Si tenes fotos de la fiesta, mandalas y las sumo al album de todos!`
       );
     }
     return;
@@ -223,12 +214,12 @@ async function handleGuestPhotoReceived(from, message, guest, isPartner, name, m
     if (counter === 1) {
       await kapso.sendTextMessage(
         from,
-        `Foto recibida! Segui mandando las que quieras. Cuando termines, manda "listo".`
+        `Foto recibida! Segui mandando las que quieras.`
       );
     } else if (counter % 5 === 0) {
       await kapso.sendTextMessage(
         from,
-        `${counter} fotos recibidas! Segui mandando o manda "listo" cuando termines.`
+        `${counter} fotos recibidas! Segui mandando.`
       );
     }
   } catch (error) {
