@@ -11,6 +11,7 @@ SOBRE LA FIESTA:
 - Horario: 16:30 a 2am
 - Lugar: a 20 km al este de Montevideo. Los que van manejando reciben las coordenadas exactas unos dias antes. Los que van en Transfer salen del Sofitel a las 16hs.
 - Transfer: ida desde el Sofitel a las 16hs. Vuelta: transfers durante la noche. Se registran en myn50.com/transfer
+- Look & Feel: estilo boho / Coachella / Burning Man / playa / dunas / Mad Max. Colores tierra, arena, beige, blanco, ocre, oxido. Evitar negro y colores oscuros, no es la onda. Texturas naturales, telas livianas, accesorios festivaleros.
 - Look & Feel Mujeres: https://pin.it/4ajrxlxHR
 - Look & Feel Hombres: https://pin.it/56VAH3kFm
 - Recomendamos NO usar zapatos de tacos. Ideal zapatillas, botas o borcegos.
