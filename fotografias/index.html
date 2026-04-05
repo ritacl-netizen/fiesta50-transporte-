@@ -327,7 +327,7 @@
 
   <script>
     // TODO: Replace with deployed Apps Script URL for FotosAuth
-    const FOTOS_AUTH_URL = 'https://script.google.com/macros/s/AKfycbxTtFmHOW7n6-dcptyivgZLV1l82Q3RBIIXotAV9jZuRPf3P-0Ct-arC9PrQ8BDN74kfg/exec';
+    const FOTOS_AUTH_URL = 'https://script.google.com/macros/s/AKfycbwrMxMdxCuE5F4xSbxd9d2tssWC559hFrvwRF4YQkC2sx9JJbwkrtMEvWFR3g4gV9rHCQ/exec';
 
     const ciInput = document.getElementById('ciInput');
     const phoneInput = document.getElementById('phoneInput');
@@ -376,12 +376,8 @@
       loginBtn.innerHTML = '<span class="spinner"></span> Verificando...';
 
       try {
-        const response = await fetch(FOTOS_AUTH_URL, {
-          method: 'POST',
-          body: JSON.stringify({ ci: ci, phone4: phone4 }),
-          headers: { 'Content-Type': 'text/plain' },
-        });
-
+        const url = `${FOTOS_AUTH_URL}?ci=${encodeURIComponent(ci)}&phone4=${encodeURIComponent(phone4)}`;
+        const response = await fetch(url);
         const result = await response.json();
 
         if (result.success) {
