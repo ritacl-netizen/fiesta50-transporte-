@@ -352,6 +352,21 @@
       font-size: 0.85rem; opacity: 0.5;
     }
 
+    .lightbox .lb-dl-btn {
+      position: absolute;
+      top: 1.5rem; right: 5rem;
+      width: 44px; height: 44px;
+      background: rgba(255, 255, 255, 0.1);
+      border: none; border-radius: 50%;
+      color: #fff;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .lightbox .lb-dl-btn:hover { background: rgba(255, 255, 255, 0.25); }
+    .lightbox .lb-dl-btn svg { width: 20px; height: 20px; }
+
     @keyframes spin { to { transform: rotate(360deg); } }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(8px); }
@@ -435,6 +450,7 @@
 
   <!-- LIGHTBOX -->
   <div class="lightbox" id="lightbox">
+    <button class="lb-dl-btn" id="lb-dl-btn" title="Descargar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
     <button class="close-btn" onclick="closeLightbox()">&times;</button>
     <button class="nav-btn prev" onclick="navigateLightbox(-1)">&#8249;</button>
     <img id="lightbox-img" src="" alt="">
@@ -625,6 +641,7 @@
       const photo = currentPhotos[index];
       img.src = `${R2_URL}/${photo.prefix}/${photo.id}.jpg`;
       document.getElementById('lightbox-counter').textContent = `${index + 1} / ${currentPhotos.length}`;
+      document.getElementById('lb-dl-btn').onclick = () => downloadPhoto(photo);
       lb.classList.add('active');
       document.body.style.overflow = 'hidden';
     }
@@ -639,6 +656,7 @@
       const photo = currentPhotos[currentIndex];
       document.getElementById('lightbox-img').src = `${R2_URL}/${photo.prefix}/${photo.id}.jpg`;
       document.getElementById('lightbox-counter').textContent = `${currentIndex + 1} / ${currentPhotos.length}`;
+      document.getElementById('lb-dl-btn').onclick = () => downloadPhoto(photo);
     }
 
     // Download
