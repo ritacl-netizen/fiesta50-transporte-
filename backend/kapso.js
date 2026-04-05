@@ -1,7 +1,7 @@
 const { WhatsAppClient } = require("@kapso/whatsapp-cloud-api");
 
 const client = new WhatsAppClient({
-  apiKey: process.env.KAPSO_API_KEY,
+  kapsoApiKey: process.env.KAPSO_API_KEY,
 });
 
 const phoneNumberId = process.env.KAPSO_PHONE_NUMBER_ID;
