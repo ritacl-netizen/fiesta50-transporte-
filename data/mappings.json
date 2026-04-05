@@ -8,6 +8,15 @@
       ],
       "guest-59894025002-1775425679415-4": [
         "nicolas-berman-3dff53"
+      ],
+      "guest-59894025002-1775426349790-5": [],
+      "guest-59894025002-1775426351625-6": [],
+      "guest-59894025002-1775426353744-7": [],
+      "guest-59894025002-1775426356075-8": [
+        "nicolas-berman-3dff53"
+      ],
+      "guest-59894025002-1775426358260-9": [
+        "nicolas-berman-3dff53"
       ]
     },
     "pro": {
@@ -21,7 +30,9 @@
     "nicolas-berman-3dff53": {
       "whatsapp": [
         "guest-59894025002-1775425677229-3",
-        "guest-59894025002-1775425679415-4"
+        "guest-59894025002-1775425679415-4",
+        "guest-59894025002-1775426356075-8",
+        "guest-59894025002-1775426358260-9"
       ],
       "pro": [
         "5423de7a-9252-4190-bbf4-72ed2f94d643-4-5005-c"
@@ -30,10 +41,10 @@
   },
   "stats": {
     "whatsapp": {
-      "total_photos": 4,
-      "photos_with_faces": 3,
-      "total_faces_found": 10,
-      "total_matches": 2
+      "total_photos": 9,
+      "photos_with_faces": 8,
+      "total_faces_found": 19,
+      "total_matches": 4
     },
     "pro": {
       "total_photos": 2,
