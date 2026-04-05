@@ -1,0 +1,14 @@
+# Backend (deployed separately, contains secrets)
+backend/.env
+backend/node_modules/
+
+# Recognition (local processing only)
+recognition/__pycache__/
+recognition/*.pyc
+
+# Large files
+IMG_5516.mov
+
+# OS files
+.DS_Store
+Thumbs.db

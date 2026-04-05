@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tu Album — MYN50</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+  <div class="album-header">
+    <h1>MYN50</h1>
+    <p class="source-label" id="source-label"></p>
+    <p class="guest-name" id="guest-name"></p>
+    <p class="photo-count" id="photo-count"></p>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <span>Cargando tu álbum...</span>
+  </div>
+
+  <div class="error-message" id="error" style="display:none"></div>
+
+  <div class="photo-grid" id="photo-grid"></div>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox">
+    <button class="close-btn" onclick="closeLightbox()">&times;</button>
+    <button class="nav-btn prev" onclick="navigateLightbox(-1)">&#8249;</button>
+    <img id="lightbox-img" src="" alt="">
+    <button class="nav-btn next" onclick="navigateLightbox(1)">&#8250;</button>
+    <span class="counter" id="lightbox-counter"></span>
+  </div>
+
+  <script src="../assets/app.js"></script>
+</body>
+</html>

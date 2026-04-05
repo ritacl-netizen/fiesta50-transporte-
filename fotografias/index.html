@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fotografias — MYN50</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      color: #fff;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #bg-video {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      z-index: -2;
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.15);
+      z-index: -1;
+    }
+
+    .container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      height: 100dvh;
+      padding: 20px;
+    }
+
+    .card {
+      text-align: center;
+      max-width: 420px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 40px 32px;
+      backdrop-filter: blur(12px);
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 300;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      opacity: 0.9;
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
+      font-weight: 400;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      opacity: 0.5;
+      margin-bottom: 28px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      opacity: 0.5;
+      margin-bottom: 8px;
+      text-align: left;
+    }
+
+    label .hint {
+      text-transform: none;
+      letter-spacing: 0.5px;
+      opacity: 0.7;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 1rem;
+      font-family: 'Inter', sans-serif;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.3);
+      color: #fff;
+      outline: none;
+      transition: border-color 0.3s;
+      text-align: center;
+      letter-spacing: 3px;
+    }
+
+    input[type="text"]::placeholder {
+      color: rgba(255, 255, 255, 0.25);
+      letter-spacing: 1px;
+    }
+
+    input[type="text"]:focus {
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    button.btn {
+      width: 100%;
+      margin-top: 24px;
+      padding: 14px 24px;
+      font-size: 0.85rem;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    button.btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    button.btn:active { transform: scale(0.98); }
+    button.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .message {
+      margin-top: 20px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 400;
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .message.error {
+      background: rgba(220, 38, 38, 0.25);
+      border: 1px solid rgba(255, 100, 100, 0.2);
+      display: block;
+    }
+
+    .message.success {
+      background: rgba(22, 163, 74, 0.25);
+      border: 1px solid rgba(100, 255, 100, 0.2);
+      display: block;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
+    /* Sections view (shown after login) */
+    #sections {
+      display: none;
+    }
+
+    .sections-title {
+      font-size: 1.4rem;
+      font-weight: 300;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      opacity: 0.9;
+    }
+
+    .sections-greeting {
+      font-size: 0.9rem;
+      font-weight: 400;
+      opacity: 0.5;
+      margin-bottom: 32px;
+    }
+
+    .section-links {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .section-link {
+      display: block;
+      text-align: center;
+      padding: 20px 24px;
+      text-decoration: none;
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.06);
+      transition: all 0.3s ease;
+    }
+
+    .section-link:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.35);
+      transform: translateY(-2px);
+    }
+
+    .section-link:active { transform: scale(0.98); }
+
+    .section-link .section-name {
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .section-link .section-desc {
+      font-size: 0.78rem;
+      font-weight: 300;
+      opacity: 0.5;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-top: 24px;
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.4);
+      text-decoration: none;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      transition: opacity 0.3s;
+    }
+
+    .back-link:hover { opacity: 1; color: #fff; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 520px) {
+      .card { padding: 28px 20px; }
+      h1, .sections-title { font-size: 1.2rem; letter-spacing: 4px; }
+      input[type="text"] { font-size: 1.1rem; padding: 16px; }
+      button.btn { padding: 16px 24px; font-size: 0.9rem; min-height: 50px; }
+    }
+  </style>
+</head>
+<body>
+
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="../fire.mp4" type="video/mp4">
+  </video>
+
+  <div class="overlay"></div>
+
+  <div class="container">
+    <!-- Login form -->
+    <div class="card" id="login-card">
+      <h1>Fotografias</h1>
+      <p class="subtitle">Ingresa tus datos</p>
+
+      <div class="form-group">
+        <label>CI <span class="hint">(solo numeros)</span></label>
+        <input
+          type="text"
+          id="ciInput"
+          autocomplete="off"
+          inputmode="numeric"
+        >
+      </div>
+
+      <div class="form-group">
+        <label>Ultimos 4 digitos del celular</label>
+        <input
+          type="text"
+          id="phoneInput"
+          maxlength="4"
+          autocomplete="off"
+          inputmode="numeric"
+        >
+      </div>
+
+      <button class="btn" id="loginBtn" onclick="login()">Ingresar</button>
+
+      <div id="message" class="message"></div>
+
+      <a href="/" class="back-link">Volver</a>
+    </div>
+
+    <!-- Sections (shown after login) -->
+    <div class="card" id="sections" style="display:none">
+      <p class="sections-title">Fotografias</p>
+      <p class="sections-greeting" id="greeting"></p>
+
+      <div class="section-links">
+        <a href="#" class="section-link" id="link-whatsapp">
+          <div class="section-name">Fotos via WhatsApp</div>
+          <div class="section-desc">Fotos compartidas por los invitados</div>
+        </a>
+        <a href="#" class="section-link" id="link-pro">
+          <div class="section-name">Fotos Pro</div>
+          <div class="section-desc">Fotos de los fotografos profesionales</div>
+        </a>
+      </div>
+
+      <a href="/" class="back-link">Volver</a>
+    </div>
+  </div>
+
+  <script>
+    // TODO: Replace with deployed Apps Script URL for FotosAuth
+    const FOTOS_AUTH_URL = 'https://script.google.com/macros/s/AKfycbxTtFmHOW7n6-dcptyivgZLV1l82Q3RBIIXotAV9jZuRPf3P-0Ct-arC9PrQ8BDN74kfg/exec';
+
+    const ciInput = document.getElementById('ciInput');
+    const phoneInput = document.getElementById('phoneInput');
+    const loginBtn = document.getElementById('loginBtn');
+    const messageDiv = document.getElementById('message');
+
+    // Check if already logged in
+    const saved = sessionStorage.getItem('myn50_guest');
+    if (saved) {
+      showSections(JSON.parse(saved));
+    }
+
+    // Enter key navigation
+    ciInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') phoneInput.focus();
+    });
+    phoneInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') login();
+    });
+
+    async function login() {
+      const ci = ciInput.value.trim();
+      const phone4 = phoneInput.value.trim();
+      messageDiv.className = 'message';
+      messageDiv.style.display = 'none';
+
+      if (!ci) {
+        showMessage('Ingresa tu CI para continuar.', 'error');
+        ciInput.focus();
+        return;
+      }
+
+      if (!/^\d+$/.test(ci)) {
+        showMessage('CI: solo numeros, sin puntos ni espacios.', 'error');
+        ciInput.focus();
+        return;
+      }
+
+      if (!phone4 || phone4.length !== 4 || !/^\d{4}$/.test(phone4)) {
+        showMessage('Ingresa los ultimos 4 digitos de tu celular.', 'error');
+        phoneInput.focus();
+        return;
+      }
+
+      loginBtn.disabled = true;
+      loginBtn.innerHTML = '<span class="spinner"></span> Verificando...';
+
+      try {
+        const response = await fetch(FOTOS_AUTH_URL, {
+          method: 'POST',
+          body: JSON.stringify({ ci: ci, phone4: phone4 }),
+          headers: { 'Content-Type': 'text/plain' },
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          const guest = {
+            name: result.name,
+            guestId: result.guestId,
+            ci: ci
+          };
+          sessionStorage.setItem('myn50_guest', JSON.stringify(guest));
+          showSections(guest);
+        } else {
+          showMessage(result.message, 'error');
+        }
+      } catch (err) {
+        showMessage('Error de conexion. Intenta de nuevo.', 'error');
+      }
+
+      loginBtn.disabled = false;
+      loginBtn.innerHTML = 'Ingresar';
+    }
+
+    function showSections(guest) {
+      document.getElementById('login-card').style.display = 'none';
+      document.getElementById('sections').style.display = 'block';
+      document.getElementById('greeting').textContent = `Hola, ${guest.name}`;
+
+      const guestId = guest.guestId;
+      document.getElementById('link-whatsapp').href = `/album/?source=whatsapp&id=${guestId}`;
+      document.getElementById('link-pro').href = `/album/?source=pro&id=${guestId}`;
+    }
+
+    function showMessage(text, type) {
+      messageDiv.textContent = text;
+      messageDiv.className = 'message ' + type;
+      messageDiv.style.display = 'block';
+    }
+  </script>
+
+</body>
+</html>
