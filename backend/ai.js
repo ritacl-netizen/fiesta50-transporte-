@@ -48,7 +48,7 @@ async function generateResponse(phone, guestContext, userMessage, messageType) {
       generationConfig: {
         temperature: 0.7,
         maxOutputTokens: 1024,
-        thinkingConfig: { thinkingBudget: 0 },
+        thinkingConfig: { thinkingBudget: 1024 },
       },
       systemInstruction: SYSTEM_PROMPT,
     });
