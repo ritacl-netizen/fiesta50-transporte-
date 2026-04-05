@@ -2,39 +2,34 @@ const { WhatsAppClient } = require("@kapso/whatsapp-cloud-api");
 
 const client = new WhatsAppClient({
   kapsoApiKey: process.env.KAPSO_API_KEY,
+  baseUrl: "https://app.kapso.ai/api/meta/",
 });
 
 const phoneNumberId = process.env.KAPSO_PHONE_NUMBER_ID;
 
 async function sendTextMessage(to, text) {
-  return client.messages.send(phoneNumberId, {
+  return client.messages.sendText({
+    phoneNumberId,
     to,
-    type: "text",
-    text: { body: text },
+    body: text,
   });
 }
 
 async function sendImageMessage(to, imageUrl, caption) {
-  return client.messages.send(phoneNumberId, {
+  return client.messages.sendImage({
+    phoneNumberId,
     to,
-    type: "image",
-    image: { link: imageUrl, caption },
+    link: imageUrl,
+    caption,
   });
 }
 
-async function getMediaUrl(mediaId) {
-  const response = await client.media.getUrl(phoneNumberId, mediaId);
-  return response.url;
-}
-
 async function downloadMedia(mediaId) {
-  const response = await client.media.download(phoneNumberId, mediaId);
-  return response;
+  return client.media.download(mediaId);
 }
 
 module.exports = {
   sendTextMessage,
   sendImageMessage,
-  getMediaUrl,
   downloadMedia,
 };
