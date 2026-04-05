@@ -4,6 +4,8 @@ const crypto = require("crypto");
 const kapso = require("./kapso");
 const sheets = require("./sheets");
 const r2 = require("./r2");
+const rekognition = require("./rekognition");
+const mappings = require("./mappings");
 
 const app = express();
 app.use(express.json());
@@ -166,8 +168,10 @@ async function handleSelfieReceived(from, message, guest, isPartner, name, media
     const url = await r2.uploadSelfie(personId, mediaBuffer);
     console.log(`Selfie saved for ${name}: ${url}`);
 
+    // Clear Rekognition cache so new selfie is used for matching
+    rekognition.clearCache();
+
     await sheets.markSelfieReceived(guest.rowIndex, isPartner);
-    conversationState.set(from, "COLLECTING_PHOTOS");
 
     await kapso.sendTextMessage(
       from,
@@ -211,6 +215,9 @@ async function handleGuestPhotoReceived(from, message, guest, isPartner, name, m
 
     await sheets.incrementPhotoCount(guest.rowIndex, isPartner);
 
+    // Run face recognition in background (don't block response)
+    matchPhotoInBackground(photoId, "whatsapp", mediaBuffer);
+
     if (counter === 1) {
       await kapso.sendTextMessage(
         from,
@@ -228,6 +235,41 @@ async function handleGuestPhotoReceived(from, message, guest, isPartner, name, m
       from,
       "Hubo un error con esa foto. Podes intentar de nuevo?"
     );
+  }
+}
+
+// Run face matching in background
+async function matchPhotoInBackground(photoId, source, photoBuffer) {
+  try {
+    // Get all guests who have selfies
+    const guests = await sheets.getAllGuests();
+    const selfieIds = guests
+      .filter((g) => g.selfieMain && g.guestId)
+      .map((g) => g.guestId);
+
+    // Also include partner selfie IDs
+    for (const g of guests) {
+      if (g.selfiePartner && g.partnerName) {
+        selfieIds.push(generateGuestId(g.partnerName));
+      }
+    }
+
+    if (selfieIds.length === 0) {
+      console.log(`[Rekognition] No selfies to match against`);
+      return;
+    }
+
+    console.log(`[Rekognition] Matching photo ${photoId} against ${selfieIds.length} selfies...`);
+    const matchedGuests = await rekognition.matchPhoto(photoBuffer, selfieIds);
+
+    if (matchedGuests.length > 0) {
+      mappings.addMatch(photoId, source, matchedGuests);
+      console.log(`[Rekognition] Photo ${photoId} matched: ${matchedGuests.join(", ")}`);
+    } else {
+      console.log(`[Rekognition] Photo ${photoId}: no matches`);
+    }
+  } catch (error) {
+    console.error(`[Rekognition] Error matching ${photoId}:`, error.message);
   }
 }
 

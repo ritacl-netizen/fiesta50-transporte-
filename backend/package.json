@@ -16,6 +16,7 @@
     "googleapis": "^130.0.0",
     "dotenv": "^16.0.0",
     "crypto": "^1.0.1",
-    "@google/generative-ai": "^0.21.0"
+    "@google/generative-ai": "^0.21.0",
+    "@aws-sdk/client-rekognition": "^3.0.0"
   }
 }
