@@ -300,7 +300,7 @@ async function matchPhotoInBackground(photoId, source, photoBuffer) {
 async function requestSelfie(phone, name) {
   await kapso.sendTextMessage(
     phone,
-    `Hola ${name}!\n\nPara la fiesta de Fede, estamos armando albums de fotos personalizados. Mandame una selfie tuya asi podemos identificarte en las fotos del evento y armarte tu album.\n\nSolo manda una foto y listo!`
+    `Hola ${name}!\n\nPara la fiesta de Meli y Nico, estamos armando albums de fotos personalizados. Mandame una selfie tuya asi podemos identificarte en las fotos del evento y armarte tu album.\n\nSolo manda una foto y listo! Ya falta poquito!`
   );
 }
 
@@ -399,7 +399,7 @@ app.post("/api/send-albums", async (req, res) => {
         const albumUrl = `${baseUrl}?id=${guest.guestId}`;
         await kapso.sendTextMessage(
           guest.mainPhone,
-          `Hola ${guest.mainName}!\n\nYa estan las fotos de la fiesta de Fede! Mira tu album personalizado aca:\n\n${albumUrl}\n\nEsperamos que la hayas pasado increible!`
+          `Hola ${guest.mainName}!\n\nYa estan las fotos de la fiesta de Meli y Nico! Mira tu album personalizado aca:\n\n${albumUrl}\n\nEsperamos que la hayas pasado increible!`
         );
         await sheets.markAlbumSent(guest.rowIndex, false);
         sent++;
@@ -411,7 +411,7 @@ app.post("/api/send-albums", async (req, res) => {
         const albumUrl = `${baseUrl}?id=${partnerId}`;
         await kapso.sendTextMessage(
           guest.partnerPhone,
-          `Hola ${guest.partnerName}!\n\nYa estan las fotos de la fiesta de Fede! Mira tu album personalizado aca:\n\n${albumUrl}\n\nEsperamos que la hayas pasado increible!`
+          `Hola ${guest.partnerName}!\n\nYa estan las fotos de la fiesta de Meli y Nico! Mira tu album personalizado aca:\n\n${albumUrl}\n\nEsperamos que la hayas pasado increible!`
         );
         await sheets.markAlbumSent(guest.rowIndex, true);
         sent++;
