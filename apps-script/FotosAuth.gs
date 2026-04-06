@@ -13,8 +13,8 @@ const COL_MAIN_NAME = 14;      // N
 const COL_MAIN_DNI = 15;       // O
 const COL_MAIN_PHONE = 16;     // P
 const COL_PARTNER_DNI = 12;    // L
-const COL_GUEST_ID = 36;       // AJ
-const COL_PARTNER_PHONE = 39;  // AM
+const COL_GUEST_ID = 50;       // AX - [BOT] Guest ID
+const COL_PARTNER_PHONE = 53;  // BA - [BOT] Tel Pareja
 
 function doGet(e) {
   var ci = (e && e.parameter && e.parameter.ci) || '';
@@ -53,7 +53,7 @@ function doAuth(ci, phone4) {
     return jsonResponse({ success: false, message: 'No se encontraron invitados.' });
   }
 
-  var dataRange = sheet.getRange(2, 1, lastRow - 1, COL_PARTNER_PHONE);
+  var dataRange = sheet.getRange(2, 1, lastRow - 1, 53); // Read up to column BA
   var values = dataRange.getValues();
 
   for (var i = 0; i < values.length; i++) {

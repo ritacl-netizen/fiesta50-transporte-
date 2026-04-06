@@ -117,6 +117,36 @@ async function processMessage(from, messageType, message, mediaUrl) {
     return;
   }
 
+  // Handle contact shared (WhatsApp contact card)
+  if (messageType === "contacts") {
+    console.log("[CONTACTS] Full message:", JSON.stringify(message, null, 2).substring(0, 1000));
+    const contacts = message.contacts || message.kapso?.message_type_data?.contacts || [];
+    if (state === "AWAITING_PARTNER_PHONE" && contacts.length > 0) {
+      const contact = contacts[0];
+      const phone = contact.phones?.[0]?.phone || contact.phones?.[0]?.wa_id || "";
+      const cleanPhone = phone.replace(/[\s\-\(\)\.+]/g, "");
+      if (cleanPhone.length >= 8) {
+        await sheets.setPartnerPhone(guest.rowIndex, cleanPhone);
+        conversationState.delete(from);
+        await kapso.sendTextMessage(
+          from,
+          `Perfecto! Ya tengo el numero de ${guest.partnerName}. Le voy a escribir para pedirle su selfie.`
+        );
+        try {
+          await requestSelfie(cleanPhone, guest.partnerName);
+        } catch (e) {
+          console.log(`Could not message partner: ${e.message}`);
+        }
+        return;
+      }
+    }
+    // If not awaiting partner phone, let AI handle
+    const guestContext = { name, hasSelfie, partnerName: guest.partnerName, partnerHasSelfie: guest.selfiePartner, partnerHasPhone: !!guest.partnerPhone, state: state || "normal" };
+    const aiMsg = await ai.generateResponse(from, guestContext, "[El invitado compartio un contacto]", "contacts");
+    if (aiMsg) await kapso.sendTextMessage(from, aiMsg);
+    return;
+  }
+
   // Handle text messages
   if (messageType === "text") {
     const text = (message.text?.body || "").trim();
