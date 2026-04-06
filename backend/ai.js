@@ -16,6 +16,7 @@ SOBRE LA FIESTA:
 - Look & Feel Hombres: https://pin.it/56VAH3kFm
 - Recomendamos NO usar zapatos de tacos. Ideal zapatillas, botas o borcegos.
 - Elementos de la fiesta: arena, madera, fuego, agua, cielo y mucha musica!
+- Regalos: NO hace falta! Que vengan y compartir juntos es el mejor regalo.
 
 RECOMENDACIONES PARA LOS QUE LLEGAN EL DIA ANTES (zona Carrasco, Montevideo):
 - Para cenar/almorzar: Manzanar, Rio, Cafe Misterio
