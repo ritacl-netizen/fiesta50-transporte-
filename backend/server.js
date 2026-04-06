@@ -97,7 +97,7 @@ async function processMessage(from, messageType, message, mediaUrl) {
   if (!guest) {
     await kapso.sendTextMessage(
       from,
-      "Hola! No encontre tu numero en la lista de invitados. Verifica que este sea el numero registrado en la invitacion."
+      "Hola! No encontre tu numero en la lista de invitados. Verifica que este sea el numero registrado en la invitacion, o pidele a tu pareja que registre tu telefono."
     );
     return;
   }
