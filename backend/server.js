@@ -131,7 +131,7 @@ async function processMessage(from, messageType, message, mediaUrl) {
         console.log(`[CONTACTS] Saved partner phone for ${guest.partnerName}: ${cleanPhone}`);
         await kapso.sendTextMessage(
           from,
-          `Perfecto! Ya tengo el numero de ${guest.partnerName} registrado. Compartidle este contacto para que tambien pueda mandar su selfie y ver sus fotos!`
+          `Genial! Ya tengo el numero de ${guest.partnerName} registrado. Si le avisas para que nos escriba desde su celu asi tambien le registramos la selfie!`
         );
         return;
       }
@@ -158,7 +158,7 @@ async function processMessage(from, messageType, message, mediaUrl) {
         conversationState.delete(from);
         await kapso.sendTextMessage(
           from,
-          `Perfecto! Ya tengo el numero de ${guest.partnerName} registrado. Compartidle este contacto para que tambien pueda mandar su selfie y ver sus fotos!`
+          `Genial! Ya tengo el numero de ${guest.partnerName} registrado. Si le avisas para que nos escriba desde su celu asi tambien le registramos la selfie!`
         );
         return;
       }
