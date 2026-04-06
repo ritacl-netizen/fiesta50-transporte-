@@ -102,7 +102,7 @@ async function processMessage(from, messageType, message, mediaUrl) {
     return;
   }
 
-  const isPartner = guest.partnerPhone === sheets.normalizePhone(from);
+  const isPartner = sheets.phonesMatch(guest.partnerPhone, from);
   const state = conversationState.get(from);
   const name = isPartner ? guest.partnerName : guest.mainName;
   const hasSelfie = isPartner ? guest.selfiePartner : guest.selfieMain;

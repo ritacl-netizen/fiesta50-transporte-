@@ -11,16 +11,15 @@ const COL = {
   MAIN_PHONE: 15, // P - teléfono principal
 };
 
-// New columns we'll add (adjust these based on actual sheet)
+// Bot columns (AX onwards - all empty/ours)
 const COL_EXTRA = {
-  GUEST_ID: 35, // AJ - Guest unique ID
-  SELFIE_MAIN: 36, // AK - Selfie recibida (principal)
-  SELFIE_PARTNER: 37, // AL - Selfie recibida (pareja)
-  PARTNER_PHONE: 38, // AM - Teléfono pareja
-  ALBUM_SENT_MAIN: 39, // AN - Album enviado (principal)
-  ALBUM_SENT_PARTNER: 40, // AO - Album enviado (pareja)
-  PHOTOS_COUNT_MAIN: 41, // AP - Cantidad fotos subidas (principal)
-  PHOTOS_COUNT_PARTNER: 42, // AQ - Cantidad fotos subidas (pareja)
+  GUEST_ID: 49, // AX - [BOT] Guest unique ID
+  SELFIE_MAIN: 50, // AY - [BOT] Selfie recibida (principal)
+  SELFIE_PARTNER: 51, // AZ - [BOT] Selfie recibida (pareja)
+  PARTNER_PHONE: 52, // BA - [BOT] Teléfono pareja
+  ALBUM_SENT_MAIN: 53, // BB - [BOT] Album enviado (principal)
+  ALBUM_SENT_PARTNER: 54, // BC - [BOT] Album enviado (pareja)
+  PHOTOS_COUNT: 55, // BD - [BOT] Fotos subidas
 };
 
 let sheetsApi = null;
@@ -55,7 +54,7 @@ async function getAllGuests() {
   const sheets = await getSheets();
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_NAME}!A2:AO`,
+    range: `${SHEET_NAME}!A2:BD`,
   });
 
   const rows = response.data.values || [];
@@ -90,25 +89,35 @@ async function getAllGuests() {
 
 function normalizePhone(phone) {
   if (!phone) return "";
-  // Remove spaces, dashes, parentheses
-  let clean = phone.replace(/[\s\-\(\)\.]/g, "");
-  // Ensure it starts with country code
+  // Remove spaces, dashes, parentheses, dots, plus
+  let clean = phone.replace(/[\s\-\(\)\.+]/g, "");
+  // Uruguay: 0XX -> 598XX
   if (clean.startsWith("0")) {
-    clean = "598" + clean.slice(1); // Uruguay default
+    clean = "598" + clean.slice(1);
   }
-  if (!clean.startsWith("+")) {
-    // If no +, assume it already has country code
-  } else {
-    clean = clean.slice(1); // remove +
+  // Argentina: normalize 549XX to 54XX (WhatsApp sends without the 9)
+  if (clean.startsWith("549")) {
+    clean = "54" + clean.slice(3);
   }
   return clean;
 }
 
+// Compare two phone numbers accounting for Argentine 9 variant
+function phonesMatch(a, b) {
+  if (!a || !b) return false;
+  const na = normalizePhone(a);
+  const nb = normalizePhone(b);
+  if (na === nb) return true;
+  // Also try with/without Argentine 9
+  const stripAr9 = (p) => p.startsWith("549") ? "54" + p.slice(3) : p;
+  const addAr9 = (p) => p.startsWith("54") && !p.startsWith("549") ? "549" + p.slice(2) : p;
+  return stripAr9(na) === stripAr9(nb) || addAr9(na) === addAr9(nb);
+}
+
 async function findGuestByPhone(phone) {
   const guests = await getAllGuests();
-  const normalized = normalizePhone(phone);
   return guests.find(
-    (g) => g.mainPhone === normalized || g.partnerPhone === normalized
+    (g) => phonesMatch(g.mainPhone, phone) || phonesMatch(g.partnerPhone, phone)
   );
 }
 
@@ -143,8 +152,8 @@ async function markAlbumSent(rowIndex, isPartner) {
   await updateCell(rowIndex, col, "SI");
 }
 
-async function incrementPhotoCount(rowIndex, isPartner) {
-  const col = isPartner ? COL_EXTRA.PHOTOS_COUNT_PARTNER : COL_EXTRA.PHOTOS_COUNT_MAIN;
+async function incrementPhotoCount(rowIndex) {
+  const col = COL_EXTRA.PHOTOS_COUNT;
   const sheets = await getSheets();
   const cell = `${SHEET_NAME}!${colLetter(col)}${rowIndex}`;
   const current = await sheets.spreadsheets.values.get({
@@ -171,6 +180,7 @@ module.exports = {
   incrementPhotoCount,
   updateCell,
   normalizePhone,
+  phonesMatch,
   COL,
   COL_EXTRA,
 };
