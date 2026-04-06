@@ -15,6 +15,7 @@ const COL_MAIN_PHONE = 16;     // P
 const COL_PARTNER_DNI = 12;    // L
 const COL_GUEST_ID = 50;       // AX - [BOT] Guest ID
 const COL_PARTNER_PHONE = 53;  // BA - [BOT] Tel Pareja
+const COL_PARTNER_GUEST_ID = 57; // BE - [BOT] Partner Guest ID
 
 function doGet(e) {
   var ci = (e && e.parameter && e.parameter.ci) || '';
@@ -53,7 +54,7 @@ function doAuth(ci, phone4) {
     return jsonResponse({ success: false, message: 'No se encontraron invitados.' });
   }
 
-  var dataRange = sheet.getRange(2, 1, lastRow - 1, 53); // Read up to column BA
+  var dataRange = sheet.getRange(2, 1, lastRow - 1, 57); // Read up to column BE
   var values = dataRange.getValues();
 
   for (var i = 0; i < values.length; i++) {
@@ -64,6 +65,7 @@ function doAuth(ci, phone4) {
     var mainPhone = cleanPhone(String(values[i][COL_MAIN_PHONE - 1]).trim());
     var partnerPhone = cleanPhone(String(values[i][COL_PARTNER_PHONE - 1]).trim());
     var guestId = String(values[i][COL_GUEST_ID - 1]).trim();
+    var partnerGuestId = String(values[i][COL_PARTNER_GUEST_ID - 1]).trim();
 
     if (mainDni === ci) {
       if (!mainPhone) {
@@ -97,7 +99,7 @@ function doAuth(ci, phone4) {
         return jsonResponse({
           success: true,
           name: partnerName,
-          guestId: generateGuestId(partnerName)
+          guestId: partnerGuestId || generateGuestId(partnerName)
         });
       } else {
         return jsonResponse({

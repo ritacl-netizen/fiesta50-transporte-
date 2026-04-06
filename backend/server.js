@@ -200,6 +200,11 @@ async function handleSelfieReceived(from, message, guest, isPartner, name, media
 
     const personId = isPartner ? generateGuestId(guest.partnerName) : guestId;
 
+    // Save partner guest ID to sheet so login can find it
+    if (isPartner) {
+      await sheets.setPartnerGuestId(guest.rowIndex, personId);
+    }
+
     // Download image from Kapso media URL or via media ID
     const mediaBuffer = mediaUrl
       ? await kapso.downloadMediaFromUrl(mediaUrl)
@@ -260,8 +265,6 @@ async function handleGuestPhotoReceived(from, message, guest, isPartner, name, m
 
     const url = await r2.uploadGuestPhoto(photoId, mediaBuffer);
     console.log(`Guest photo saved from ${name}: ${url}`);
-
-    await sheets.incrementPhotoCount(guest.rowIndex, isPartner);
 
     // Run face recognition in background (don't block response)
     matchPhotoInBackground(photoId, "whatsapp", mediaBuffer);

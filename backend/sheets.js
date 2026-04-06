@@ -19,7 +19,7 @@ const COL_EXTRA = {
   PARTNER_PHONE: 52, // BA - [BOT] Teléfono pareja
   ALBUM_SENT_MAIN: 53, // BB - [BOT] Album enviado (principal)
   ALBUM_SENT_PARTNER: 54, // BC - [BOT] Album enviado (pareja)
-  PHOTOS_COUNT: 55, // BD - [BOT] Fotos subidas
+  PARTNER_GUEST_ID: 55, // BD - [BOT] Partner Guest ID
 };
 
 let sheetsApi = null;
@@ -152,22 +152,8 @@ async function markAlbumSent(rowIndex, isPartner) {
   await updateCell(rowIndex, col, "SI");
 }
 
-async function incrementPhotoCount(rowIndex) {
-  const col = COL_EXTRA.PHOTOS_COUNT;
-  const sheets = await getSheets();
-  const cell = `${SHEET_NAME}!${colLetter(col)}${rowIndex}`;
-  const current = await sheets.spreadsheets.values.get({
-    spreadsheetId: SPREADSHEET_ID,
-    range: cell,
-  });
-  const count = parseInt((current.data.values?.[0]?.[0]) || "0", 10);
-  await sheets.spreadsheets.values.update({
-    spreadsheetId: SPREADSHEET_ID,
-    range: cell,
-    valueInputOption: "RAW",
-    requestBody: { values: [[count + 1]] },
-  });
-  return count + 1;
+async function setPartnerGuestId(rowIndex, guestId) {
+  await updateCell(rowIndex, COL_EXTRA.PARTNER_GUEST_ID, guestId);
 }
 
 module.exports = {
@@ -177,10 +163,11 @@ module.exports = {
   setGuestId,
   setPartnerPhone,
   markAlbumSent,
-  incrementPhotoCount,
   updateCell,
+  setPartnerGuestId,
   normalizePhone,
   phonesMatch,
+  colLetter,
   COL,
   COL_EXTRA,
 };
