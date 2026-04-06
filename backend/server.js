@@ -130,13 +130,8 @@ async function processMessage(from, messageType, message, mediaUrl) {
         conversationState.delete(from);
         await kapso.sendTextMessage(
           from,
-          `Perfecto! Ya tengo el numero de ${guest.partnerName}. Le voy a escribir para pedirle su selfie.`
+          `Perfecto! Ya tengo el numero de ${guest.partnerName} registrado. Compartidle este contacto para que tambien pueda mandar su selfie y ver sus fotos!`
         );
-        try {
-          await requestSelfie(cleanPhone, guest.partnerName);
-        } catch (e) {
-          console.log(`Could not message partner: ${e.message}`);
-        }
         return;
       }
     }
@@ -161,13 +156,8 @@ async function processMessage(from, messageType, message, mediaUrl) {
         conversationState.delete(from);
         await kapso.sendTextMessage(
           from,
-          `Perfecto! Ya tengo el numero de ${guest.partnerName}. Le voy a escribir para pedirle su selfie.`
+          `Perfecto! Ya tengo el numero de ${guest.partnerName} registrado. Compartidle este contacto para que tambien pueda mandar su selfie y ver sus fotos!`
         );
-        try {
-          await requestSelfie(phoneMatch, guest.partnerName);
-        } catch (e) {
-          console.log(`Could not message partner: ${e.message}`);
-        }
         return;
       }
     }
