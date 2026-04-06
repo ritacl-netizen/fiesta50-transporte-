@@ -363,6 +363,51 @@ app.get("/api/mappings", async (req, res) => {
   }
 });
 
+// Re-process all existing photos against all selfies
+app.post("/api/reprocess", async (req, res) => {
+  try {
+    const guests = await sheets.getAllGuests();
+    const selfieIds = guests
+      .filter((g) => g.selfieMain && g.guestId)
+      .map((g) => g.guestId);
+    for (const g of guests) {
+      if (g.selfiePartner && g.partnerName) {
+        selfieIds.push(generateGuestId(g.partnerName));
+      }
+    }
+
+    // List all photos in party-whatsapp/
+    const waPhotos = await r2.listFiles("party-whatsapp/");
+    const proPhotos = await r2.listFiles("party-pro/");
+
+    let matched = 0;
+    let processed = 0;
+
+    for (const photo of [...waPhotos, ...proPhotos]) {
+      const source = photo.key.startsWith("party-whatsapp/") ? "whatsapp" : "pro";
+      const photoId = photo.key.replace(/^party-(whatsapp|pro)\//, "").replace(/\.jpg$/, "");
+
+      const buf = await r2.getFile(photo.key);
+      if (buf[0] !== 0xFF) continue; // skip non-JPEG
+
+      processed++;
+      console.log(`[Reprocess] ${processed}: ${photoId} against ${selfieIds.length} selfies`);
+
+      const matches = await rekognition.matchPhoto(buf, selfieIds);
+      if (matches.length > 0) {
+        await mappings.addMatch(photoId, source, matches);
+        matched++;
+        console.log(`[Reprocess] Matched: ${matches.join(", ")}`);
+      }
+    }
+
+    res.json({ processed, matched, selfies: selfieIds.length });
+  } catch (error) {
+    console.error("[Reprocess] Error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get("/api/status", async (req, res) => {
   try {
     const guests = await sheets.getAllGuests();
