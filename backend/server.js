@@ -152,9 +152,11 @@ async function processMessage(from, messageType, message, mediaUrl) {
     const text = (message.text?.body || "").trim();
 
     // Check if they're sending a phone number for their partner
-    if (state === "AWAITING_PARTNER_PHONE") {
+    // Works whether or not AWAITING_PARTNER_PHONE state is set (Cloud Run may restart)
+    const needsPartnerPhone = guest.partnerName && !guest.partnerPhone;
+    if (needsPartnerPhone) {
       const phoneMatch = text.replace(/[\s\-\(\)\.+]/g, "");
-      if (phoneMatch.length >= 8) {
+      if (/^\d{8,}$/.test(phoneMatch)) {
         await sheets.setPartnerPhone(guest.rowIndex, phoneMatch);
         conversationState.delete(from);
         await kapso.sendTextMessage(
