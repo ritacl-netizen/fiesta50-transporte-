@@ -102,16 +102,27 @@ function normalizePhone(phone) {
   return clean;
 }
 
-// Compare two phone numbers accounting for Argentine 9 variant
+// Compare two phone numbers flexibly
 function phonesMatch(a, b) {
   if (!a || !b) return false;
   const na = normalizePhone(a);
   const nb = normalizePhone(b);
   if (na === nb) return true;
-  // Also try with/without Argentine 9
+
+  // Strip Argentine 9
   const stripAr9 = (p) => p.startsWith("549") ? "54" + p.slice(3) : p;
   const addAr9 = (p) => p.startsWith("54") && !p.startsWith("549") ? "549" + p.slice(2) : p;
-  return stripAr9(na) === stripAr9(nb) || addAr9(na) === addAr9(nb);
+  if (stripAr9(na) === stripAr9(nb)) return true;
+  if (addAr9(na) === addAr9(nb)) return true;
+
+  // Match by last 8+ digits (handles missing country/area codes)
+  const lastDigits = (p) => p.slice(-8);
+  if (na.length >= 8 && nb.length >= 8 && lastDigits(na) === lastDigits(nb)) return true;
+
+  // One ends with the other (e.g., "69544415" matches "541169544415")
+  if (na.endsWith(nb) || nb.endsWith(na)) return true;
+
+  return false;
 }
 
 async function findGuestByPhone(phone) {
