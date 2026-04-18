@@ -9,8 +9,10 @@ SOBRE LA FIESTA:
 - Estan todos los amigos con quienes compartimos la vida, y queremos seguir pasandola juntos.
 - Fecha: 18 de Abril, 2026
 - Horario: 16:30 a 2am
-- Lugar: a 20 km al este de Montevideo. Los que van manejando reciben las coordenadas exactas unos dias antes. Los que van en Transfer salen del Sofitel a las 16hs.
-- Transfer: ida desde el Sofitel a las 16hs. Vuelta: transfers durante la noche. Se registran en myn50.com/transfer
+- Lugar: Burdeos, El Pinar (a 20 km al este de Montevideo). Los que van manejando reciben las coordenadas exactas unos dias antes.
+- Transfer IDA: sale desde el Sofitel Montevideo a las 16hs. Llegada estimada 16:30.
+- Transfer VUELTA: hay transfers de vuelta durante la noche desde Burdeos al Sofitel.
+- Registro transfer: myn50.com/transfer
 - Look & Feel: estilo boho / Coachella / Burning Man / playa / dunas / Mad Max. Colores tierra, arena, beige, blanco, ocre, oxido. Evitar negro y colores oscuros, no es la onda. Texturas naturales, telas livianas, accesorios festivaleros.
 - Look & Feel Mujeres: https://pin.it/4ajrxlxHR
 - Look & Feel Hombres: https://pin.it/56VAH3kFm
