@@ -262,42 +262,48 @@
       summary.classList.remove('show');
 
       let ok = 0, fail = 0;
-      const BATCH = 10;
+      const CONCURRENCY = 4;
 
-      for (let i = 0; i < files.length; i += BATCH) {
-        const batch = files.slice(i, i + BATCH);
+      // Upload one file at a time (Cloud Run 32MB body limit), but N in parallel
+      async function uploadOne(file, index) {
+        setStatus(index, 'Subiendo...', 'uploading');
         const formData = new FormData();
-        batch.forEach(f => formData.append('photos', f));
-
-        batch.forEach((_, j) => setStatus(i + j, 'Subiendo...', 'uploading'));
-
+        formData.append('photos', file);
         try {
           const res = await fetch(`${BACKEND_URL}/api/upload?source=${source}`, {
             method: 'POST',
             headers: { 'X-Admin-Password': password },
             body: formData,
           });
-
           if (res.status === 401) {
-            batch.forEach((_, j) => setStatus(i + j, 'Password incorrecta', 'error'));
-            fail += batch.length;
-            break;
+            setStatus(index, 'Password incorrecta', 'error');
+            return 'auth';
           }
-
+          if (!res.ok) {
+            setStatus(index, `Error ${res.status}`, 'error');
+            fail++;
+            return 'fail';
+          }
           const json = await res.json();
-          (json.results || []).forEach((r, j) => {
-            if (r.uploaded) {
-              setStatus(i + j, 'Subida', 'done');
-              ok++;
-            } else {
-              setStatus(i + j, 'Error', 'error');
-              fail++;
-            }
-          });
+          const r = (json.results || [])[0];
+          if (r && r.uploaded) {
+            setStatus(index, 'Subida', 'done');
+            ok++;
+          } else {
+            setStatus(index, 'Error', 'error');
+            fail++;
+          }
         } catch (e) {
-          batch.forEach((_, j) => setStatus(i + j, 'Error de red', 'error'));
-          fail += batch.length;
+          setStatus(index, 'Error de red', 'error');
+          fail++;
         }
+      }
+
+      // Process in parallel waves
+      for (let i = 0; i < files.length; i += CONCURRENCY) {
+        const wave = files.slice(i, i + CONCURRENCY).map((f, j) => uploadOne(f, i + j));
+        const results = await Promise.all(wave);
+        if (results.includes('auth')) break;
       }
 
       summary.innerHTML = `<strong>${ok}</strong> subidas - <strong>${fail}</strong> errores<br><small style="opacity:0.5">El face matching corre en background</small>`;

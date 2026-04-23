@@ -361,7 +361,9 @@ function generateGuestId(name) {
 // CORS for frontend
 app.use("/api", (req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "GET");
+  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, X-Admin-Password");
+  if (req.method === "OPTIONS") return res.sendStatus(204);
   next();
 });
 
