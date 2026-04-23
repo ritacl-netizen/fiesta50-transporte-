@@ -52,18 +52,24 @@ async function compareFaces(photoBuffer, selfieBuffer) {
   }
 }
 
-// Match a photo against all known selfies
+// Match a photo against all known selfies in parallel (batched)
 // Returns array of matched guestIds
 async function matchPhoto(photoBuffer, guestSelfieIds) {
+  const BATCH_SIZE = 10; // Parallel comparisons per batch
   const matches = [];
 
-  for (const guestId of guestSelfieIds) {
-    const selfieBuffer = await loadSelfie(guestId);
-    if (!selfieBuffer) continue;
-
-    const isMatch = await compareFaces(photoBuffer, selfieBuffer);
-    if (isMatch) {
-      matches.push(guestId);
+  for (let i = 0; i < guestSelfieIds.length; i += BATCH_SIZE) {
+    const batch = guestSelfieIds.slice(i, i + BATCH_SIZE);
+    const results = await Promise.all(
+      batch.map(async (guestId) => {
+        const selfieBuffer = await loadSelfie(guestId);
+        if (!selfieBuffer) return null;
+        const isMatch = await compareFaces(photoBuffer, selfieBuffer);
+        return isMatch ? guestId : null;
+      })
+    );
+    for (const r of results) {
+      if (r) matches.push(r);
     }
   }
 

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Upload — MYN50</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      min-height: 100vh;
+      background: #0a0a0a;
+      color: #fff;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 300;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
+      text-align: center;
+      opacity: 0.5;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+
+    .row { display: flex; gap: 12px; margin-bottom: 16px; }
+    .row > * { flex: 1; }
+
+    label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      opacity: 0.5;
+      margin-bottom: 8px;
+    }
+
+    input[type="password"], select {
+      width: 100%;
+      padding: 12px 16px;
+      font-size: 1rem;
+      font-family: inherit;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.3);
+      color: #fff;
+      outline: none;
+    }
+
+    input[type="password"]:focus, select:focus { border-color: rgba(255, 255, 255, 0.4); }
+
+    .dropzone {
+      margin-top: 20px;
+      padding: 60px 20px;
+      border: 2px dashed rgba(255, 255, 255, 0.2);
+      border-radius: 16px;
+      text-align: center;
+      transition: all 0.25s;
+      background: rgba(255, 255, 255, 0.02);
+      cursor: pointer;
+    }
+
+    .dropzone.drag-over {
+      border-color: rgba(100, 200, 255, 0.6);
+      background: rgba(100, 200, 255, 0.08);
+    }
+
+    .dropzone .big {
+      font-size: 1.2rem;
+      font-weight: 300;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+
+    .dropzone .small {
+      font-size: 0.85rem;
+      opacity: 0.5;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    button.btn {
+      width: 100%;
+      margin-top: 20px;
+      padding: 14px 24px;
+      font-size: 0.85rem;
+      font-family: inherit;
+      font-weight: 500;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    button.btn:hover { background: rgba(255, 255, 255, 0.18); }
+    button.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .queue {
+      margin-top: 24px;
+    }
+
+    .file-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      margin-bottom: 6px;
+      font-size: 0.85rem;
+    }
+
+    .file-row.uploading { background: rgba(100, 150, 255, 0.15); }
+    .file-row.done { background: rgba(40, 200, 100, 0.15); }
+    .file-row.error { background: rgba(220, 60, 60, 0.2); }
+
+    .file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 12px; opacity: 0.85; }
+    .file-status { font-size: 0.75rem; opacity: 0.7; letter-spacing: 1px; text-transform: uppercase; }
+
+    .summary {
+      margin-top: 20px;
+      padding: 16px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.06);
+      font-size: 0.9rem;
+      text-align: center;
+      display: none;
+    }
+
+    .summary.show { display: block; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Admin Upload</h1>
+    <p class="subtitle">MYN50 Fotos</p>
+
+    <div class="row">
+      <div>
+        <label>Password</label>
+        <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <div>
+        <label>Tipo</label>
+        <select id="source">
+          <option value="whatsapp">WhatsApp</option>
+          <option value="pro">Pro</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="dropzone" id="dropzone">
+      <div class="big">Arrastra fotos aca</div>
+      <div class="small">o hace click para seleccionar</div>
+      <input type="file" id="fileInput" class="file-input" multiple accept="image/*">
+    </div>
+
+    <button class="btn" id="uploadBtn" disabled>Subir fotos</button>
+
+    <div class="queue" id="queue"></div>
+    <div class="summary" id="summary"></div>
+  </div>
+
+  <script>
+    const BACKEND_URL = 'https://fiesta50-backend-723746235838.us-east1.run.app';
+
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const queue = document.getElementById('queue');
+    const summary = document.getElementById('summary');
+    const passwordInput = document.getElementById('password');
+    const sourceSelect = document.getElementById('source');
+
+    // Remember password
+    const savedPwd = sessionStorage.getItem('myn50_admin_pwd');
+    if (savedPwd) passwordInput.value = savedPwd;
+
+    let files = [];
+
+    dropzone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => addFiles(e.target.files));
+
+    ['dragover', 'dragenter'].forEach(ev => {
+      dropzone.addEventListener(ev, (e) => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+    });
+    ['dragleave', 'dragend'].forEach(ev => {
+      dropzone.addEventListener(ev, () => dropzone.classList.remove('drag-over'));
+    });
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('drag-over');
+      addFiles(e.dataTransfer.files);
+    });
+
+    function addFiles(fileList) {
+      const newFiles = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+      files = files.concat(newFiles);
+      renderQueue();
+      uploadBtn.disabled = files.length === 0;
+    }
+
+    function renderQueue() {
+      queue.innerHTML = '';
+      files.forEach((f, i) => {
+        const row = document.createElement('div');
+        row.className = 'file-row';
+        row.id = 'file-' + i;
+        row.innerHTML = `
+          <span class="file-name">${f.name}</span>
+          <span class="file-status" id="status-${i}">Listo</span>
+        `;
+        queue.appendChild(row);
+      });
+    }
+
+    function setStatus(i, status, cssClass) {
+      const row = document.getElementById('file-' + i);
+      const statusEl = document.getElementById('status-' + i);
+      if (row) {
+        row.className = 'file-row ' + (cssClass || '');
+      }
+      if (statusEl) statusEl.textContent = status;
+    }
+
+    uploadBtn.addEventListener('click', async () => {
+      const password = passwordInput.value.trim();
+      if (!password) {
+        alert('Ingresa la password');
+        return;
+      }
+      sessionStorage.setItem('myn50_admin_pwd', password);
+
+      const source = sourceSelect.value;
+      uploadBtn.disabled = true;
+      uploadBtn.textContent = 'Subiendo...';
+      summary.classList.remove('show');
+
+      let ok = 0, fail = 0;
+      const BATCH = 10;
+
+      for (let i = 0; i < files.length; i += BATCH) {
+        const batch = files.slice(i, i + BATCH);
+        const formData = new FormData();
+        batch.forEach(f => formData.append('photos', f));
+
+        batch.forEach((_, j) => setStatus(i + j, 'Subiendo...', 'uploading'));
+
+        try {
+          const res = await fetch(`${BACKEND_URL}/api/upload?source=${source}`, {
+            method: 'POST',
+            headers: { 'X-Admin-Password': password },
+            body: formData,
+          });
+
+          if (res.status === 401) {
+            batch.forEach((_, j) => setStatus(i + j, 'Password incorrecta', 'error'));
+            fail += batch.length;
+            break;
+          }
+
+          const json = await res.json();
+          (json.results || []).forEach((r, j) => {
+            if (r.uploaded) {
+              setStatus(i + j, 'Subida', 'done');
+              ok++;
+            } else {
+              setStatus(i + j, 'Error', 'error');
+              fail++;
+            }
+          });
+        } catch (e) {
+          batch.forEach((_, j) => setStatus(i + j, 'Error de red', 'error'));
+          fail += batch.length;
+        }
+      }
+
+      summary.innerHTML = `<strong>${ok}</strong> subidas - <strong>${fail}</strong> errores<br><small style="opacity:0.5">El face matching corre en background</small>`;
+      summary.classList.add('show');
+      uploadBtn.textContent = 'Subir mas fotos';
+      uploadBtn.disabled = false;
+      files = [];
+    });
+  </script>
+
+</body>
+</html>

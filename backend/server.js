@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const crypto = require("crypto");
+const multer = require("multer");
 const kapso = require("./kapso");
 const sheets = require("./sheets");
 const r2 = require("./r2");
@@ -9,7 +10,15 @@ const mappings = require("./mappings");
 const ai = require("./ai");
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: "50mb" }));
+
+// Multer for file uploads (memory storage, max 20MB per file)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 },
+});
+
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "myn50admin";
 
 // Health check
 app.get("/", (req, res) => {
@@ -367,6 +376,83 @@ app.get("/api/mappings", async (req, res) => {
 });
 
 // Re-process all existing photos against all selfies
+// CORS preflight for admin endpoints
+app.options("/api/upload", (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, X-Admin-Password");
+  res.sendStatus(204);
+});
+
+// Bulk upload photos (admin only)
+// POST /api/upload?source=whatsapp|pro with multipart form + X-Admin-Password header
+app.post("/api/upload", upload.array("photos", 100), async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+
+  const password = req.header("X-Admin-Password");
+  if (password !== ADMIN_PASSWORD) {
+    return res.status(401).json({ error: "Invalid password" });
+  }
+
+  const source = req.query.source === "pro" ? "pro" : "whatsapp";
+  const files = req.files || [];
+
+  if (files.length === 0) {
+    return res.status(400).json({ error: "No files uploaded" });
+  }
+
+  // Load all selfies once for matching
+  const guests = await sheets.getAllGuests();
+  const selfieIds = guests.filter((g) => g.selfieMain && g.guestId).map((g) => g.guestId);
+  for (const g of guests) {
+    if (g.selfiePartner && g.partnerName) {
+      selfieIds.push(generateGuestId(g.partnerName));
+    }
+  }
+
+  const results = [];
+
+  for (const file of files) {
+    try {
+      // Generate unique photo ID
+      const timestamp = Date.now();
+      const rand = Math.random().toString(36).slice(2, 8);
+      const photoId = `admin-${timestamp}-${rand}`;
+
+      // Upload to R2
+      if (source === "pro") {
+        await r2.uploadProPhoto(photoId, file.buffer);
+      } else {
+        await r2.uploadGuestPhoto(photoId, file.buffer);
+      }
+
+      // Match against selfies (in background, don't block response)
+      matchAdminPhotoInBackground(photoId, source, file.buffer, selfieIds);
+
+      results.push({ filename: file.originalname, photoId, uploaded: true });
+    } catch (e) {
+      console.error(`[Upload] Error for ${file.originalname}:`, e.message);
+      results.push({ filename: file.originalname, uploaded: false, error: e.message });
+    }
+  }
+
+  res.json({ source, uploaded: results.filter((r) => r.uploaded).length, total: files.length, results });
+});
+
+async function matchAdminPhotoInBackground(photoId, source, photoBuffer, selfieIds) {
+  try {
+    const matches = await rekognition.matchPhoto(photoBuffer, selfieIds);
+    if (matches.length > 0) {
+      await mappings.addMatch(photoId, source, matches);
+      console.log(`[Upload] ${photoId} matched: ${matches.join(", ")}`);
+    } else {
+      console.log(`[Upload] ${photoId}: no matches`);
+    }
+  } catch (e) {
+    console.error(`[Upload] Rekognition error for ${photoId}:`, e.message);
+  }
+}
+
 app.post("/api/reprocess", async (req, res) => {
   try {
     const guests = await sheets.getAllGuests();
