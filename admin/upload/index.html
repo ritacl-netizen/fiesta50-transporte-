@@ -181,6 +181,7 @@
     </div>
 
     <button class="btn" id="uploadBtn" disabled>Subir fotos</button>
+    <button class="btn" id="retryBtn" style="display:none; margin-top: 10px;">Reintentar los que fallaron</button>
 
     <div class="queue" id="queue"></div>
     <div class="summary" id="summary"></div>
@@ -192,6 +193,7 @@
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('fileInput');
     const uploadBtn = document.getElementById('uploadBtn');
+    const retryBtn = document.getElementById('retryBtn');
     const queue = document.getElementById('queue');
     const summary = document.getElementById('summary');
     const passwordInput = document.getElementById('password');
@@ -297,40 +299,56 @@
         });
       }
 
-      // Upload one file at a time (Cloud Run 32MB body limit), but N in parallel
+      // Upload one photo with automatic retry on network errors
       async function uploadOne(file, index) {
         setStatus(index, 'Comprimiendo...', 'uploading');
         const compressed = await compressImage(file);
-        setStatus(index, 'Subiendo...', 'uploading');
-        const formData = new FormData();
-        formData.append('photos', compressed);
-        try {
-          const res = await fetch(`${BACKEND_URL}/api/upload?source=${source}`, {
-            method: 'POST',
-            headers: { 'X-Admin-Password': password },
-            body: formData,
-          });
-          if (res.status === 401) {
-            setStatus(index, 'Password incorrecta', 'error');
-            return 'auth';
-          }
-          if (!res.ok) {
-            setStatus(index, `Error ${res.status}`, 'error');
+
+        const MAX_RETRIES = 4;
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+          setStatus(index, attempt === 1 ? 'Subiendo...' : `Reintento ${attempt}...`, 'uploading');
+          const formData = new FormData();
+          formData.append('photos', compressed);
+          try {
+            const res = await fetch(`${BACKEND_URL}/api/upload?source=${source}`, {
+              method: 'POST',
+              headers: { 'X-Admin-Password': password },
+              body: formData,
+            });
+            if (res.status === 401) {
+              setStatus(index, 'Password incorrecta', 'error');
+              return 'auth';
+            }
+            if (!res.ok) {
+              if (attempt < MAX_RETRIES && (res.status === 502 || res.status === 503 || res.status === 504 || res.status === 429)) {
+                await new Promise(r => setTimeout(r, 1000 * attempt));
+                continue;
+              }
+              setStatus(index, `Error ${res.status}`, 'error');
+              fail++;
+              return 'fail';
+            }
+            const json = await res.json();
+            const r = (json.results || [])[0];
+            if (r && r.uploaded) {
+              setStatus(index, 'Subida', 'done');
+              ok++;
+              return 'ok';
+            } else {
+              setStatus(index, 'Error', 'error');
+              fail++;
+              return 'fail';
+            }
+          } catch (e) {
+            // Network error - retry with backoff
+            if (attempt < MAX_RETRIES) {
+              await new Promise(r => setTimeout(r, 1500 * attempt));
+              continue;
+            }
+            setStatus(index, 'Error de red', 'error');
             fail++;
             return 'fail';
           }
-          const json = await res.json();
-          const r = (json.results || [])[0];
-          if (r && r.uploaded) {
-            setStatus(index, 'Subida', 'done');
-            ok++;
-          } else {
-            setStatus(index, 'Error', 'error');
-            fail++;
-          }
-        } catch (e) {
-          setStatus(index, 'Error de red', 'error');
-          fail++;
         }
       }
 
@@ -345,7 +363,29 @@
       summary.classList.add('show');
       uploadBtn.textContent = 'Subir mas fotos';
       uploadBtn.disabled = false;
+
+      // Keep only failed files for easy retry
+      const failedIndexes = [];
+      files.forEach((_, i) => {
+        const row = document.getElementById('file-' + i);
+        if (row && row.classList.contains('error')) failedIndexes.push(i);
+      });
+      if (failedIndexes.length > 0) {
+        window._failedFiles = failedIndexes.map(i => files[i]);
+        retryBtn.style.display = 'block';
+        retryBtn.textContent = `Reintentar ${failedIndexes.length} fallidas`;
+      }
       files = [];
+    });
+
+    retryBtn.addEventListener('click', () => {
+      if (window._failedFiles && window._failedFiles.length > 0) {
+        files = window._failedFiles.slice();
+        window._failedFiles = [];
+        renderQueue();
+        retryBtn.style.display = 'none';
+        uploadBtn.click();
+      }
     });
   </script>
 
