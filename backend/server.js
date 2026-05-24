@@ -381,23 +381,36 @@ app.get("/api/mappings", async (req, res) => {
 let _photoListCache = null;
 let _photoListCacheTime = 0;
 app.get("/api/all-photos", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Content-Type, X-Admin-Password");
   try {
-    // Cache for 60 seconds
-    if (_photoListCache && Date.now() - _photoListCacheTime < 60000) {
+    // Include selfies if admin password is provided
+    const includeSelfies = req.query.includeSelfies === "1" && req.header("X-Admin-Password") === ADMIN_PASSWORD;
+
+    // Cache for 60 seconds (but not when admin requests selfies)
+    if (!includeSelfies && _photoListCache && Date.now() - _photoListCacheTime < 60000) {
       return res.json(_photoListCache);
     }
-    const [waFiles, proFiles, masFiles] = await Promise.all([
+
+    const fetchList = [
       r2.listFiles("party-whatsapp/"),
       r2.listFiles("party-pro/"),
       r2.listFiles("party-mas/"),
-    ]);
+    ];
+    if (includeSelfies) fetchList.push(r2.listFiles("selfies/"));
+
+    const [waFiles, proFiles, masFiles, selfieFiles] = await Promise.all(fetchList);
     const result = {
       whatsapp: waFiles.map((f) => f.key.replace("party-whatsapp/", "").replace(/\.jpg$/, "")),
       pro: proFiles.map((f) => f.key.replace("party-pro/", "").replace(/\.jpg$/, "")),
       mas: masFiles.map((f) => f.key.replace("party-mas/", "").replace(/\.jpg$/, "")),
     };
-    _photoListCache = result;
-    _photoListCacheTime = Date.now();
+    if (includeSelfies) {
+      result.selfies = selfieFiles.map((f) => f.key.replace("selfies/", "").replace(/\.jpg$/, ""));
+    } else {
+      _photoListCache = result;
+      _photoListCacheTime = Date.now();
+    }
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });

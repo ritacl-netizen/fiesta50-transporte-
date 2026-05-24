@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Todas — MYN50</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      min-height: 100vh;
+      background: #0a0a0a;
+      color: #fff;
+    }
+
+    /* Login */
+    .login-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .card {
+      max-width: 380px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 32px;
+      text-align: center;
+    }
+
+    h1 { font-size: 1.4rem; font-weight: 300; letter-spacing: 6px; text-transform: uppercase; margin-bottom: 6px; }
+    .subtitle { font-size: 0.8rem; opacity: 0.5; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 24px; }
+
+    label { display: block; font-size: 0.75rem; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; opacity: 0.5; margin-bottom: 8px; text-align: left; }
+
+    input[type="password"] {
+      width: 100%; padding: 14px 16px; font-size: 1rem; font-family: inherit;
+      border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 10px;
+      background: rgba(0, 0, 0, 0.3); color: #fff; outline: none;
+    }
+
+    button.btn {
+      width: 100%; margin-top: 16px; padding: 14px 24px;
+      font-size: 0.85rem; font-family: inherit; font-weight: 500;
+      letter-spacing: 3px; text-transform: uppercase;
+      border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 10px;
+      background: rgba(255, 255, 255, 0.1); color: #fff; cursor: pointer;
+    }
+
+    button.btn:hover { background: rgba(255, 255, 255, 0.18); }
+    button.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .error-msg {
+      margin-top: 12px; padding: 10px; border-radius: 8px;
+      background: rgba(220, 60, 60, 0.2); font-size: 0.85rem;
+      display: none;
+    }
+
+    /* Gallery */
+    #gallery { display: none; padding: 24px 12px 40px; }
+
+    .header {
+      text-align: center; margin-bottom: 24px;
+    }
+
+    .header h1 { letter-spacing: 4px; }
+
+    .filters {
+      display: flex; justify-content: center; gap: 10px;
+      margin-bottom: 24px; flex-wrap: wrap; padding: 0 12px;
+    }
+
+    .filter-btn {
+      padding: 8px 18px; font-size: 0.75rem; font-family: inherit;
+      font-weight: 500; letter-spacing: 2px; text-transform: uppercase;
+      border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 20px;
+      background: rgba(255, 255, 255, 0.06); color: rgba(255, 255, 255, 0.6);
+      cursor: pointer; transition: all 0.25s;
+    }
+
+    .filter-btn:hover { color: #fff; border-color: rgba(255, 255, 255, 0.35); }
+    .filter-btn.active { background: rgba(255, 255, 255, 0.18); border-color: rgba(255, 255, 255, 0.5); color: #fff; }
+    .filter-count { font-weight: 300; opacity: 0.6; margin-left: 6px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 3px;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    .photo-item {
+      position: relative;
+      aspect-ratio: 1;
+      overflow: hidden;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 2px;
+    }
+
+    .photo-item img {
+      width: 100%; height: 100%; object-fit: cover; opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .photo-item img.loaded { opacity: 1; }
+    .photo-item:hover img { transform: scale(1.04); }
+
+    .photo-label {
+      position: absolute; top: 6px; left: 6px;
+      background: rgba(0,0,0,0.5); color: #fff;
+      padding: 2px 8px; border-radius: 4px;
+      font-size: 0.65rem; letter-spacing: 1px; text-transform: uppercase;
+      backdrop-filter: blur(4px);
+    }
+
+    .dl-btn {
+      position: absolute; bottom: 6px; right: 6px;
+      width: 32px; height: 32px;
+      background: rgba(0, 0, 0, 0.5);
+      border: none; border-radius: 50%; color: #fff;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity 0.2s;
+      backdrop-filter: blur(4px);
+    }
+
+    .photo-item:hover .dl-btn { opacity: 1; }
+    .dl-btn svg { width: 16px; height: 16px; }
+
+    .loading {
+      text-align: center; padding: 60px 20px;
+      opacity: 0.5; font-size: 0.9rem;
+    }
+
+    /* Lightbox */
+    .lightbox {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0, 0, 0, 0.95); z-index: 1000;
+      align-items: center; justify-content: center;
+    }
+    .lightbox.active { display: flex; }
+    .lightbox img { max-width: 92vw; max-height: 92vh; object-fit: contain; }
+    .lightbox .close-btn {
+      position: absolute; top: 1.5rem; right: 1.5rem;
+      width: 40px; height: 40px; border-radius: 50%;
+      background: rgba(255,255,255,0.1); border: none; color: #fff;
+      font-size: 1.5rem; cursor: pointer; backdrop-filter: blur(10px);
+    }
+    .lightbox .nav-btn {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      width: 50px; height: 50px; border-radius: 50%;
+      background: rgba(255,255,255,0.1); border: none; color: #fff;
+      font-size: 1.5rem; cursor: pointer; backdrop-filter: blur(10px);
+    }
+    .lightbox .nav-btn.prev { left: 1.5rem; }
+    .lightbox .nav-btn.next { right: 1.5rem; }
+    .lightbox .counter {
+      position: absolute; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+      font-size: 0.85rem; opacity: 0.6;
+    }
+    .lightbox .lb-dl-btn {
+      position: absolute; top: 1.5rem; right: 5rem;
+      width: 40px; height: 40px; border-radius: 50%;
+      background: rgba(255,255,255,0.1); border: none; color: #fff;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(10px);
+    }
+    .lightbox .lb-dl-btn svg { width: 18px; height: 18px; }
+
+    @media (max-width: 520px) {
+      .grid { grid-template-columns: repeat(3, 1fr); gap: 2px; }
+      .photo-label { font-size: 0.55rem; padding: 1px 6px; }
+      .dl-btn { opacity: 0.7; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN -->
+  <div class="login-container" id="login-view">
+    <div class="card">
+      <h1>Admin Todas</h1>
+      <p class="subtitle">Acceso restringido</p>
+      <label>Password</label>
+      <input type="password" id="passwordInput" autocomplete="current-password">
+      <button class="btn" id="loginBtn">Ingresar</button>
+      <div class="error-msg" id="errorMsg"></div>
+    </div>
+  </div>
+
+  <!-- GALLERY -->
+  <div id="gallery">
+    <div class="header">
+      <h1>Todas las fotos</h1>
+      <div class="filters" id="filters"></div>
+    </div>
+    <div class="loading" id="loading">Cargando...</div>
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <!-- LIGHTBOX -->
+  <div class="lightbox" id="lightbox">
+    <button class="lb-dl-btn" id="lb-dl-btn" title="Descargar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+    <button class="close-btn" onclick="closeLightbox()">&times;</button>
+    <button class="nav-btn prev" onclick="navigateLightbox(-1)">&#8249;</button>
+    <img id="lightbox-img" src="" alt="">
+    <button class="nav-btn next" onclick="navigateLightbox(1)">&#8250;</button>
+    <span class="counter" id="lightbox-counter"></span>
+  </div>
+
+  <script>
+    const BACKEND_URL = 'https://fiesta50-backend-723746235838.us-east1.run.app';
+    const R2_URL = 'https://pub-b1b3bdad9e3742a7a323d65bf8f0436a.r2.dev';
+
+    const PREFIX_BY_SOURCE = {
+      whatsapp: 'party-whatsapp',
+      pro: 'party-pro',
+      mas: 'party-mas',
+      selfies: 'selfies',
+    };
+
+    const LABEL_BY_SOURCE = {
+      whatsapp: 'WhatsApp',
+      pro: 'Pro',
+      mas: 'Mas',
+      selfies: 'Selfie',
+    };
+
+    let allData = {};
+    let currentFilter = 'all';
+    let currentPhotos = [];
+    let currentIndex = 0;
+
+    // Auto-login if password saved
+    const savedPwd = sessionStorage.getItem('myn50_admin_pwd');
+    if (savedPwd) {
+      document.getElementById('passwordInput').value = savedPwd;
+      login();
+    }
+
+    document.getElementById('loginBtn').addEventListener('click', login);
+    document.getElementById('passwordInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') login();
+    });
+
+    async function login() {
+      const password = document.getElementById('passwordInput').value.trim();
+      if (!password) return;
+
+      const btn = document.getElementById('loginBtn');
+      const errMsg = document.getElementById('errorMsg');
+      errMsg.style.display = 'none';
+      btn.disabled = true;
+      btn.textContent = 'Cargando...';
+
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/all-photos?includeSelfies=1`, {
+          headers: { 'X-Admin-Password': password },
+        });
+
+        if (!res.ok) {
+          errMsg.textContent = 'Password incorrecta o error de red.';
+          errMsg.style.display = 'block';
+          btn.disabled = false;
+          btn.textContent = 'Ingresar';
+          return;
+        }
+
+        const data = await res.json();
+        if (!data.selfies) {
+          // Password was wrong - selfies wasn't included
+          errMsg.textContent = 'Password incorrecta.';
+          errMsg.style.display = 'block';
+          btn.disabled = false;
+          btn.textContent = 'Ingresar';
+          return;
+        }
+
+        sessionStorage.setItem('myn50_admin_pwd', password);
+        allData = data;
+        showGallery();
+      } catch (e) {
+        errMsg.textContent = 'Error de red: ' + e.message;
+        errMsg.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Ingresar';
+      }
+    }
+
+    function showGallery() {
+      document.getElementById('login-view').style.display = 'none';
+      document.getElementById('gallery').style.display = 'block';
+      document.getElementById('loading').style.display = 'none';
+      buildFilters();
+      setFilter('all');
+    }
+
+    function buildFilters() {
+      const filtersEl = document.getElementById('filters');
+      const total = (allData.whatsapp || []).length + (allData.pro || []).length + (allData.mas || []).length + (allData.selfies || []).length;
+      const sources = [
+        { key: 'all', label: 'Todas', count: total },
+        { key: 'whatsapp', label: 'WhatsApp', count: (allData.whatsapp || []).length },
+        { key: 'pro', label: 'Pro', count: (allData.pro || []).length },
+        { key: 'mas', label: 'Mas', count: (allData.mas || []).length },
+        { key: 'selfies', label: 'Selfies', count: (allData.selfies || []).length },
+      ];
+      filtersEl.innerHTML = sources.map(s =>
+        `<button class="filter-btn ${s.key === 'all' ? 'active' : ''}" data-filter="${s.key}" onclick="setFilter('${s.key}')">${s.label} <span class="filter-count">${s.count}</span></button>`
+      ).join('');
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector(`.filter-btn[data-filter="${filter}"]`).classList.add('active');
+
+      let photos = [];
+      const sources = filter === 'all' ? ['whatsapp', 'pro', 'mas', 'selfies'] : [filter];
+      for (const src of sources) {
+        const ids = allData[src] || [];
+        photos = photos.concat(ids.map(id => ({ id, source: src, prefix: PREFIX_BY_SOURCE[src] })));
+      }
+      currentPhotos = photos;
+      renderGrid(photos);
+    }
+
+    function renderGrid(photos) {
+      const grid = document.getElementById('grid');
+      grid.innerHTML = '';
+
+      photos.forEach((photo, index) => {
+        const item = document.createElement('div');
+        item.className = 'photo-item';
+
+        const img = document.createElement('img');
+        img.dataset.src = `${R2_URL}/${photo.prefix}/${photo.id}.jpg`;
+        img.alt = '';
+        img.loading = 'lazy';
+        img.addEventListener('load', () => img.classList.add('loaded'));
+        img.addEventListener('click', () => openLightbox(index));
+
+        const label = document.createElement('span');
+        label.className = 'photo-label';
+        label.textContent = LABEL_BY_SOURCE[photo.source];
+
+        const dlBtn = document.createElement('button');
+        dlBtn.className = 'dl-btn';
+        dlBtn.title = 'Descargar';
+        dlBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+        dlBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          downloadPhoto(photo);
+        });
+
+        item.appendChild(img);
+        item.appendChild(label);
+        item.appendChild(dlBtn);
+        grid.appendChild(item);
+      });
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const img = entry.target;
+            if (img.dataset.src) {
+              img.src = img.dataset.src;
+              img.removeAttribute('data-src');
+              observer.unobserve(img);
+            }
+          }
+        });
+      }, { rootMargin: '400px' });
+      grid.querySelectorAll('img[data-src]').forEach(img => observer.observe(img));
+    }
+
+    async function downloadPhoto(photo) {
+      const url = `${R2_URL}/${photo.prefix}/${photo.id}.jpg`;
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${photo.source}-${photo.id}.jpg`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function openLightbox(index) {
+      currentIndex = index;
+      const photo = currentPhotos[index];
+      document.getElementById('lightbox-img').src = `${R2_URL}/${photo.prefix}/${photo.id}.jpg`;
+      document.getElementById('lightbox-counter').textContent = `${index + 1} / ${currentPhotos.length} · ${LABEL_BY_SOURCE[photo.source]}`;
+      document.getElementById('lb-dl-btn').onclick = () => downloadPhoto(photo);
+      document.getElementById('lightbox').classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.remove('active');
+      document.body.style.overflow = 'auto';
+    }
+
+    function navigateLightbox(dir) {
+      currentIndex = (currentIndex + dir + currentPhotos.length) % currentPhotos.length;
+      const photo = currentPhotos[currentIndex];
+      document.getElementById('lightbox-img').src = `${R2_URL}/${photo.prefix}/${photo.id}.jpg`;
+      document.getElementById('lightbox-counter').textContent = `${currentIndex + 1} / ${currentPhotos.length} · ${LABEL_BY_SOURCE[photo.source]}`;
+      document.getElementById('lb-dl-btn').onclick = () => downloadPhoto(photo);
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (!document.getElementById('lightbox').classList.contains('active')) return;
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowLeft') navigateLightbox(-1);
+      if (e.key === 'ArrowRight') navigateLightbox(1);
+    });
+  </script>
+
+</body>
+</html>
