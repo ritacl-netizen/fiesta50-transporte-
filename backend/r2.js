@@ -69,6 +69,19 @@ async function uploadProPhoto(photoId, imageBuffer, contentType = "image/jpeg") 
   return `${PUBLIC_URL}/${key}`;
 }
 
+async function uploadMasPhoto(photoId, imageBuffer, contentType = "image/jpeg") {
+  const key = `party-mas/${photoId}.jpg`;
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: BUCKET,
+      Key: key,
+      Body: imageBuffer,
+      ContentType: contentType,
+    })
+  );
+  return `${PUBLIC_URL}/${key}`;
+}
+
 async function uploadFile(key, buffer, contentType) {
   await s3.send(
     new PutObjectCommand({
@@ -103,4 +116,4 @@ async function listFiles(prefix) {
   }));
 }
 
-module.exports = { uploadSelfie, uploadPartyPhoto, uploadGuestPhoto, uploadProPhoto, uploadFile, getFile, listFiles };
+module.exports = { uploadSelfie, uploadPartyPhoto, uploadGuestPhoto, uploadProPhoto, uploadMasPhoto, uploadFile, getFile, listFiles };

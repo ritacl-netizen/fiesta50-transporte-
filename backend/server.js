@@ -386,13 +386,15 @@ app.get("/api/all-photos", async (req, res) => {
     if (_photoListCache && Date.now() - _photoListCacheTime < 60000) {
       return res.json(_photoListCache);
     }
-    const [waFiles, proFiles] = await Promise.all([
+    const [waFiles, proFiles, masFiles] = await Promise.all([
       r2.listFiles("party-whatsapp/"),
       r2.listFiles("party-pro/"),
+      r2.listFiles("party-mas/"),
     ]);
     const result = {
       whatsapp: waFiles.map((f) => f.key.replace("party-whatsapp/", "").replace(/\.jpg$/, "")),
       pro: proFiles.map((f) => f.key.replace("party-pro/", "").replace(/\.jpg$/, "")),
+      mas: masFiles.map((f) => f.key.replace("party-mas/", "").replace(/\.jpg$/, "")),
     };
     _photoListCache = result;
     _photoListCacheTime = Date.now();
@@ -412,7 +414,10 @@ app.options("/api/upload", (req, res) => {
 });
 
 // Bulk upload photos (admin only)
-// POST /api/upload?source=whatsapp|pro with multipart form + X-Admin-Password header
+// POST /api/upload?source=whatsapp|pro|mas with multipart form + X-Admin-Password header
+// - whatsapp: uploaded + face matched
+// - pro: uploaded + face matched (for "Mis Pro")
+// - mas: uploaded only, NO face matching (curated subset for "Mas")
 app.post("/api/upload", upload.array("photos", 100), async (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
 
@@ -421,19 +426,23 @@ app.post("/api/upload", upload.array("photos", 100), async (req, res) => {
     return res.status(401).json({ error: "Invalid password" });
   }
 
-  const source = req.query.source === "pro" ? "pro" : "whatsapp";
+  const sourceParam = req.query.source;
+  const source = ["pro", "mas", "whatsapp"].includes(sourceParam) ? sourceParam : "whatsapp";
   const files = req.files || [];
 
   if (files.length === 0) {
     return res.status(400).json({ error: "No files uploaded" });
   }
 
-  // Load all selfies once for matching
-  const guests = await sheets.getAllGuests();
-  const selfieIds = guests.filter((g) => g.selfieMain && g.guestId).map((g) => g.guestId);
-  for (const g of guests) {
-    if (g.selfiePartner && g.partnerName) {
-      selfieIds.push(generateGuestId(g.partnerName));
+  // Only load selfies if we'll do face matching
+  let selfieIds = [];
+  if (source !== "mas") {
+    const guests = await sheets.getAllGuests();
+    selfieIds = guests.filter((g) => g.selfieMain && g.guestId).map((g) => g.guestId);
+    for (const g of guests) {
+      if (g.selfiePartner && g.partnerName) {
+        selfieIds.push(generateGuestId(g.partnerName));
+      }
     }
   }
 
@@ -441,7 +450,6 @@ app.post("/api/upload", upload.array("photos", 100), async (req, res) => {
 
   for (const file of files) {
     try {
-      // Generate unique photo ID
       const timestamp = Date.now();
       const rand = Math.random().toString(36).slice(2, 8);
       const photoId = `admin-${timestamp}-${rand}`;
@@ -449,12 +457,16 @@ app.post("/api/upload", upload.array("photos", 100), async (req, res) => {
       // Upload to R2
       if (source === "pro") {
         await r2.uploadProPhoto(photoId, file.buffer);
+      } else if (source === "mas") {
+        await r2.uploadMasPhoto(photoId, file.buffer);
       } else {
         await r2.uploadGuestPhoto(photoId, file.buffer);
       }
 
-      // Match against selfies (in background, don't block response)
-      matchAdminPhotoInBackground(photoId, source, file.buffer, selfieIds);
+      // Match against selfies only for whatsapp/pro (not mas)
+      if (source !== "mas") {
+        matchAdminPhotoInBackground(photoId, source, file.buffer, selfieIds);
+      }
 
       results.push({ filename: file.originalname, photoId, uploaded: true });
     } catch (e) {

@@ -427,13 +427,10 @@
           Mis WhatsApp <span class="filter-count" id="count-mine-whatsapp"></span>
         </button>
         <button class="filter-btn" data-filter="mine-pro" onclick="setFilter('mine-pro')">
-          Mis Profesionales <span class="filter-count" id="count-mine-pro"></span>
+          Mis Pro <span class="filter-count" id="count-mine-pro"></span>
         </button>
-        <button class="filter-btn" data-filter="all-whatsapp" onclick="setFilter('all-whatsapp')">
-          Todas WhatsApp <span class="filter-count" id="count-all-whatsapp"></span>
-        </button>
-        <button class="filter-btn" data-filter="all-pro" onclick="setFilter('all-pro')">
-          Todas Profesionales <span class="filter-count" id="count-all-pro"></span>
+        <button class="filter-btn" data-filter="mas" onclick="setFilter('mas')">
+          Mas <span class="filter-count" id="count-mas"></span>
         </button>
         <button class="filter-btn" data-filter="video" onclick="setFilter('video')">
           Video
@@ -477,7 +474,7 @@
     const MAPPINGS_STATIC = '../data/mappings.json';
 
     let myPhotos = { whatsapp: [], pro: [] };
-    let allPhotos = { whatsapp: [], pro: [] };
+    let allPhotos = { whatsapp: [], pro: [], mas: [] };
     let currentFilter = 'mine-whatsapp';
     let currentPhotos = [];
     let currentIndex = 0;
@@ -563,20 +560,20 @@
           };
         }
 
-        // Load all photos (for "Todas" tabs)
+        // Load all photos (for "Mas" tab)
         if (allRes) {
           try {
-            allPhotos = await allRes.json();
+            const data = await allRes.json();
+            allPhotos = { whatsapp: data.whatsapp || [], pro: data.pro || [], mas: data.mas || [] };
           } catch (e) {
-            allPhotos = { whatsapp: [], pro: [] };
+            allPhotos = { whatsapp: [], pro: [], mas: [] };
           }
         }
 
         // Update counts
         document.getElementById('count-mine-whatsapp').textContent = myPhotos.whatsapp.length || '0';
         document.getElementById('count-mine-pro').textContent = myPhotos.pro.length || '(proximamente)';
-        document.getElementById('count-all-whatsapp').textContent = allPhotos.whatsapp.length || '0';
-        document.getElementById('count-all-pro').textContent = allPhotos.pro.length || '(proximamente)';
+        document.getElementById('count-mas').textContent = allPhotos.mas.length || '(proximamente)';
 
         document.getElementById('loading').style.display = 'none';
         setFilter('mine-whatsapp');
@@ -618,10 +615,8 @@
         photos = myPhotos.whatsapp.map(id => ({ id, source: 'whatsapp', prefix: 'party-whatsapp' }));
       } else if (filter === 'mine-pro') {
         photos = myPhotos.pro.map(id => ({ id, source: 'pro', prefix: 'party-pro' }));
-      } else if (filter === 'all-whatsapp') {
-        photos = allPhotos.whatsapp.map(id => ({ id, source: 'whatsapp', prefix: 'party-whatsapp' }));
-      } else if (filter === 'all-pro') {
-        photos = allPhotos.pro.map(id => ({ id, source: 'pro', prefix: 'party-pro' }));
+      } else if (filter === 'mas') {
+        photos = allPhotos.mas.map(id => ({ id, source: 'mas', prefix: 'party-mas' }));
       }
 
       currentPhotos = photos;
@@ -629,7 +624,9 @@
       if (photos.length === 0) {
         photoGrid.innerHTML = '';
         noPhotos.style.display = 'block';
-        if (filter === 'mine-pro' && allPhotos.pro.length === 0) {
+        if (filter === 'mas') {
+          noPhotos.textContent = 'Las fotos curadas estan en camino. Volve pronto!';
+        } else if (filter === 'mine-pro' && allPhotos.pro.length === 0) {
           noPhotos.textContent = 'Las fotos profesionales estan siendo procesadas. Volve pronto!';
         } else if (filter === 'mine-pro') {
           noPhotos.textContent = 'Todavia no identificamos fotos profesionales tuyas. Pronto se actualizan!';

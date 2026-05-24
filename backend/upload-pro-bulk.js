@@ -1,12 +1,13 @@
 /**
- * Bulk upload professional photos to R2 from a local directory.
+ * Bulk upload photos to R2 from a local directory.
  *
  * Usage:
- *   node upload-pro-bulk.js /path/to/folder
+ *   node upload-pro-bulk.js /path/to/folder [pro|mas]
  *
- * - Uploads all .jpg/.jpeg/.png files to R2 under party-pro/
- * - Runs Rekognition matching for each in parallel batches
- * - Updates mappings.json
+ * - "pro" (default): uploads to party-pro/ + runs face matching
+ * - "mas": uploads to party-mas/ WITHOUT face matching (curated subset)
+ *
+ * - Compresses to 1920px JPEG quality 85
  * - Skips files already uploaded (matching by original filename)
  */
 
@@ -32,14 +33,16 @@ const QUALITY = 85;
 
 async function main() {
   const dir = process.argv[2];
+  const mode = process.argv[3] === "mas" ? "mas" : "pro";
   if (!dir) {
-    console.error("Usage: node upload-pro-bulk.js /path/to/folder");
+    console.error("Usage: node upload-pro-bulk.js /path/to/folder [pro|mas]");
     process.exit(1);
   }
   if (!fs.existsSync(dir)) {
     console.error("Directory not found:", dir);
     process.exit(1);
   }
+  console.log(`[INFO] Mode: ${mode.toUpperCase()} ${mode === "mas" ? "(NO face matching)" : "(with face matching)"}`);
 
   // Find all image files
   function walk(d) {
@@ -59,19 +62,23 @@ async function main() {
   const files = walk(dir);
   console.log(`[INFO] Found ${files.length} image files in ${dir}`);
 
-  // Load selfies for matching
-  const guests = await sheets.getAllGuests();
-  const selfieIds = guests.filter((g) => g.selfieMain && g.guestId).map((g) => g.guestId);
-  for (const g of guests) {
-    if (g.selfiePartner && g.partnerName) {
-      selfieIds.push(generateGuestId(g.partnerName));
+  // Load selfies for matching (only if pro mode)
+  let selfieIds = [];
+  if (mode === "pro") {
+    const guests = await sheets.getAllGuests();
+    selfieIds = guests.filter((g) => g.selfieMain && g.guestId).map((g) => g.guestId);
+    for (const g of guests) {
+      if (g.selfiePartner && g.partnerName) {
+        selfieIds.push(generateGuestId(g.partnerName));
+      }
     }
+    console.log(`[INFO] ${selfieIds.length} selfies loaded for matching`);
   }
-  console.log(`[INFO] ${selfieIds.length} selfies loaded for matching`);
 
   // Check what's already uploaded (skip those)
-  console.log(`[INFO] Listing existing party-pro/...`);
-  const existing = await r2.listFiles("party-pro/");
+  const targetPrefix = mode === "mas" ? "party-mas/" : "party-pro/";
+  console.log(`[INFO] Listing existing ${targetPrefix}...`);
+  const existing = await r2.listFiles(targetPrefix);
   const existingNames = new Set(existing.map((f) => path.basename(f.key, ".jpg")));
   console.log(`[INFO] ${existingNames.size} already in R2`);
 
@@ -85,7 +92,8 @@ async function main() {
   async function processOne(file) {
     const baseName = path.basename(file, path.extname(file));
     // Stable photoId based on filename (so re-runs skip already done)
-    const photoId = `pro-${baseName.replace(/[^a-zA-Z0-9_-]/g, "_")}`;
+    const prefix = mode === "mas" ? "mas" : "pro";
+    const photoId = `${prefix}-${baseName.replace(/[^a-zA-Z0-9_-]/g, "_")}`;
 
     if (existingNames.has(photoId)) {
       skipped++;
@@ -102,19 +110,25 @@ async function main() {
         .jpeg({ quality: QUALITY, mozjpeg: true })
         .toBuffer();
 
-      // Upload to R2
-      await r2.uploadProPhoto(photoId, buf);
+      // Upload to R2 (correct bucket)
+      if (mode === "mas") {
+        await r2.uploadMasPhoto(photoId, buf);
+      } else {
+        await r2.uploadProPhoto(photoId, buf);
+      }
       uploaded++;
 
-      // Match in background
-      try {
-        const matches = await rekognition.matchPhoto(buf, selfieIds);
-        if (matches.length > 0) {
-          await mappings.addMatch(photoId, "pro", matches);
-          matched++;
+      // Face matching only for pro mode
+      if (mode === "pro") {
+        try {
+          const matches = await rekognition.matchPhoto(buf, selfieIds);
+          if (matches.length > 0) {
+            await mappings.addMatch(photoId, "pro", matches);
+            matched++;
+          }
+        } catch (e) {
+          console.error(`[REKOG ERR] ${photoId}:`, e.message);
         }
-      } catch (e) {
-        console.error(`[REKOG ERR] ${photoId}:`, e.message);
       }
 
       processed++;
