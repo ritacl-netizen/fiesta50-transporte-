@@ -423,14 +423,20 @@
       <p class="gallery-greeting" id="greeting"></p>
 
       <div class="filters">
-        <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">
-          Todas <span class="filter-count" id="count-all"></span>
+        <button class="filter-btn active" data-filter="mine-whatsapp" onclick="setFilter('mine-whatsapp')">
+          Mis WhatsApp <span class="filter-count" id="count-mine-whatsapp"></span>
         </button>
-        <button class="filter-btn" data-filter="whatsapp" onclick="setFilter('whatsapp')">
-          WhatsApp <span class="filter-count" id="count-whatsapp"></span>
+        <button class="filter-btn" data-filter="mine-pro" onclick="setFilter('mine-pro')">
+          Mis Profesionales <span class="filter-count" id="count-mine-pro"></span>
         </button>
-        <button class="filter-btn" data-filter="pro" onclick="setFilter('pro')">
-          Pro <span class="filter-count" id="count-pro"></span>
+        <button class="filter-btn" data-filter="all-whatsapp" onclick="setFilter('all-whatsapp')">
+          Todas WhatsApp <span class="filter-count" id="count-all-whatsapp"></span>
+        </button>
+        <button class="filter-btn" data-filter="all-pro" onclick="setFilter('all-pro')">
+          Todas Profesionales <span class="filter-count" id="count-all-pro"></span>
+        </button>
+        <button class="filter-btn" data-filter="video" onclick="setFilter('video')">
+          Video
         </button>
       </div>
     </div>
@@ -442,6 +448,12 @@
     <div class="no-photos" id="no-photos" style="display:none"></div>
 
     <div class="photo-grid" id="photo-grid"></div>
+
+    <div class="video-container" id="video-container" style="display:none; max-width: 1200px; margin: 0 auto; padding: 0 1rem 3rem;">
+      <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px;">
+        <iframe id="video-iframe" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" src="" title="Video MYN50" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      </div>
+    </div>
 
     <div style="text-align:center; padding: 1rem 0 3rem;">
       <a href="/" class="back-link">Volver</a>
@@ -464,10 +476,12 @@
     const BACKEND_URL = 'https://fiesta50-backend-723746235838.us-east1.run.app';
     const MAPPINGS_STATIC = '../data/mappings.json';
 
+    let myPhotos = { whatsapp: [], pro: [] };
     let allPhotos = { whatsapp: [], pro: [] };
-    let currentFilter = 'all';
+    let currentFilter = 'mine-whatsapp';
     let currentPhotos = [];
     let currentIndex = 0;
+    const YOUTUBE_VIDEO_ID = 'mVk03x36o7M';
 
     // Check session
     const saved = sessionStorage.getItem('myn50_guest');
@@ -529,36 +543,43 @@
       document.body.style.overflow = 'auto';
 
       try {
-        let data;
-        try {
-          const res = await fetch(`${BACKEND_URL}/api/mappings`);
-          data = await res.json();
-        } catch (e) {
-          const res = await fetch(MAPPINGS_STATIC);
-          data = await res.json();
-        }
+        // Load mappings (my matched photos) and all-photos in parallel
+        const [mappingsRes, allRes] = await Promise.all([
+          fetch(`${BACKEND_URL}/api/mappings`).catch(() => fetch(MAPPINGS_STATIC)),
+          fetch(`${BACKEND_URL}/api/all-photos`).catch(() => null),
+        ]);
+
+        const data = await mappingsRes.json();
         const guestData = data.guest_to_photos[guest.guestId];
 
         if (!guestData) {
-          allPhotos = { whatsapp: [], pro: [] };
+          myPhotos = { whatsapp: [], pro: [] };
         } else if (Array.isArray(guestData)) {
-          allPhotos = { whatsapp: guestData, pro: [] };
+          myPhotos = { whatsapp: guestData, pro: [] };
         } else {
-          allPhotos = {
+          myPhotos = {
             whatsapp: guestData.whatsapp || [],
             pro: guestData.pro || [],
           };
         }
 
+        // Load all photos (for "Todas" tabs)
+        if (allRes) {
+          try {
+            allPhotos = await allRes.json();
+          } catch (e) {
+            allPhotos = { whatsapp: [], pro: [] };
+          }
+        }
+
         // Update counts
-        const totalWa = allPhotos.whatsapp.length;
-        const totalPro = allPhotos.pro.length;
-        document.getElementById('count-all').textContent = totalWa + totalPro;
-        document.getElementById('count-whatsapp').textContent = totalWa || '(proximamente)';
-        document.getElementById('count-pro').textContent = totalPro || '(proximamente)';
+        document.getElementById('count-mine-whatsapp').textContent = myPhotos.whatsapp.length || '0';
+        document.getElementById('count-mine-pro').textContent = myPhotos.pro.length || '(proximamente)';
+        document.getElementById('count-all-whatsapp').textContent = allPhotos.whatsapp.length || '0';
+        document.getElementById('count-all-pro').textContent = allPhotos.pro.length || '(proximamente)';
 
         document.getElementById('loading').style.display = 'none';
-        setFilter('all');
+        setFilter('mine-whatsapp');
       } catch (e) {
         document.getElementById('loading').style.display = 'none';
         document.getElementById('no-photos').style.display = 'block';
@@ -573,23 +594,52 @@
       document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
       document.querySelector(`.filter-btn[data-filter="${filter}"]`).classList.add('active');
 
-      // Build photo list with source info
-      let photos = [];
-      if (filter === 'all' || filter === 'whatsapp') {
-        photos = photos.concat(allPhotos.whatsapp.map(id => ({ id, source: 'whatsapp', prefix: 'party-whatsapp' })));
+      // Toggle video view
+      const videoContainer = document.getElementById('video-container');
+      const photoGrid = document.getElementById('photo-grid');
+      const noPhotos = document.getElementById('no-photos');
+      const videoIframe = document.getElementById('video-iframe');
+
+      if (filter === 'video') {
+        photoGrid.innerHTML = '';
+        noPhotos.style.display = 'none';
+        videoContainer.style.display = 'block';
+        videoIframe.src = `https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?autoplay=1`;
+        currentPhotos = [];
+        return;
+      } else {
+        videoContainer.style.display = 'none';
+        videoIframe.src = '';
       }
-      if (filter === 'all' || filter === 'pro') {
-        photos = photos.concat(allPhotos.pro.map(id => ({ id, source: 'pro', prefix: 'party-pro' })));
+
+      // Build photo list per filter
+      let photos = [];
+      if (filter === 'mine-whatsapp') {
+        photos = myPhotos.whatsapp.map(id => ({ id, source: 'whatsapp', prefix: 'party-whatsapp' }));
+      } else if (filter === 'mine-pro') {
+        photos = myPhotos.pro.map(id => ({ id, source: 'pro', prefix: 'party-pro' }));
+      } else if (filter === 'all-whatsapp') {
+        photos = allPhotos.whatsapp.map(id => ({ id, source: 'whatsapp', prefix: 'party-whatsapp' }));
+      } else if (filter === 'all-pro') {
+        photos = allPhotos.pro.map(id => ({ id, source: 'pro', prefix: 'party-pro' }));
       }
 
       currentPhotos = photos;
 
       if (photos.length === 0) {
-        document.getElementById('photo-grid').innerHTML = '';
-        document.getElementById('no-photos').style.display = 'block';
-        document.getElementById('no-photos').textContent = 'No hay fotos en esta categoria todavia.';
+        photoGrid.innerHTML = '';
+        noPhotos.style.display = 'block';
+        if (filter === 'mine-pro' && allPhotos.pro.length === 0) {
+          noPhotos.textContent = 'Las fotos profesionales estan siendo procesadas. Volve pronto!';
+        } else if (filter === 'mine-pro') {
+          noPhotos.textContent = 'Todavia no identificamos fotos profesionales tuyas. Pronto se actualizan!';
+        } else if (filter === 'mine-whatsapp') {
+          noPhotos.textContent = 'Todavia no identificamos fotos tuyas en WhatsApp. Pronto se actualizan!';
+        } else {
+          noPhotos.textContent = 'No hay fotos en esta categoria todavia.';
+        }
       } else {
-        document.getElementById('no-photos').style.display = 'none';
+        noPhotos.style.display = 'none';
         renderGrid(photos);
       }
     }

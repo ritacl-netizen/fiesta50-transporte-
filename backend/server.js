@@ -377,6 +377,31 @@ app.get("/api/mappings", async (req, res) => {
   }
 });
 
+// List all photos in both buckets (for "Todas" filters)
+let _photoListCache = null;
+let _photoListCacheTime = 0;
+app.get("/api/all-photos", async (req, res) => {
+  try {
+    // Cache for 60 seconds
+    if (_photoListCache && Date.now() - _photoListCacheTime < 60000) {
+      return res.json(_photoListCache);
+    }
+    const [waFiles, proFiles] = await Promise.all([
+      r2.listFiles("party-whatsapp/"),
+      r2.listFiles("party-pro/"),
+    ]);
+    const result = {
+      whatsapp: waFiles.map((f) => f.key.replace("party-whatsapp/", "").replace(/\.jpg$/, "")),
+      pro: proFiles.map((f) => f.key.replace("party-pro/", "").replace(/\.jpg$/, "")),
+    };
+    _photoListCache = result;
+    _photoListCacheTime = Date.now();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Re-process all existing photos against all selfies
 // CORS preflight for admin endpoints
 app.options("/api/upload", (req, res) => {
