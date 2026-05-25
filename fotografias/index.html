@@ -429,10 +429,8 @@
         <img id="selfie-preview" style="width: 180px; height: 180px; object-fit: cover; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2);">
       </div>
 
-      <div style="margin-bottom: 12px;">
-        <input type="file" id="selfieFile" accept="image/*" style="display: none;">
-        <button type="button" class="btn" style="margin: 0;" onclick="document.getElementById('selfieFile').click()">Elegir foto</button>
-      </div>
+      <input type="file" id="selfieFile" accept="image/*" style="display: none;">
+      <button type="button" class="btn" onclick="document.getElementById('selfieFile').click()">Tomar / Elegir foto</button>
 
       <button class="btn" id="uploadSelfieBtn" style="display:none" onclick="uploadSelfie()">Subir selfie</button>
 
