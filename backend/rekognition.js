@@ -2,7 +2,15 @@ const {
   RekognitionClient,
   CompareFacesCommand,
 } = require("@aws-sdk/client-rekognition");
+const { NodeHttpHandler } = require("@smithy/node-http-handler");
+const https = require("https");
 const r2 = require("./r2");
+
+// Custom HTTPS agent with bigger socket pool
+const httpsAgent = new https.Agent({
+  keepAlive: true,
+  maxSockets: 500,
+});
 
 // Sharp is optional - only used to shrink images > 5MB
 let sharp = null;
@@ -36,6 +44,7 @@ const rekClient = new RekognitionClient({
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   },
+  requestHandler: new NodeHttpHandler({ httpsAgent }),
 });
 
 const SIMILARITY_THRESHOLD = 80; // 0-100, higher = stricter
@@ -87,7 +96,7 @@ async function ensureSize(buffer) {
 // Match a photo against all known selfies in parallel (batched)
 // Returns array of matched guestIds
 async function matchPhoto(photoBuffer, guestSelfieIds) {
-  const BATCH_SIZE = 10; // Parallel comparisons per batch
+  const BATCH_SIZE = 40; // Parallel comparisons per batch (Rekognition allows high concurrency)
   const matches = [];
 
   // Shrink photo once if needed (Rekognition limit 5MB)
