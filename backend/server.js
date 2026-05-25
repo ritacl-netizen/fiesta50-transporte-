@@ -439,7 +439,7 @@ app.post("/api/upload-selfie", upload.single("selfie"), async (req, res) => {
 
   try {
     const guestId = req.header("X-Guest-Id");
-    const ci = req.header("X-Ci");
+    const ci = (req.header("X-Ci") || "").trim();
 
     if (!guestId || !ci) {
       return res.status(400).json({ error: "Missing X-Guest-Id or X-Ci header" });
@@ -448,19 +448,17 @@ app.post("/api/upload-selfie", upload.single("selfie"), async (req, res) => {
       return res.status(400).json({ error: "No selfie file uploaded" });
     }
 
-    // Verify this guest exists in sheets (using CI for double check)
+    // Find guest by CI (more reliable than guestId since hash algorithms differ)
     const guests = await sheets.getAllGuests();
     let matched = null;
     let isPartnerRow = false;
     for (const g of guests) {
-      // Check if CI matches main or partner
-      // We need the raw row to compare; getAllGuests already exposes name+guestId
-      if (g.guestId === guestId) {
+      if (g.mainDni === ci) {
         matched = g;
         isPartnerRow = false;
         break;
       }
-      if (g.partnerName && generateGuestId(g.partnerName) === guestId) {
+      if (g.partnerDni === ci) {
         matched = g;
         isPartnerRow = true;
         break;
@@ -468,10 +466,11 @@ app.post("/api/upload-selfie", upload.single("selfie"), async (req, res) => {
     }
 
     if (!matched) {
+      console.log(`[Selfie] Guest not found for CI: ${ci}, guestId: ${guestId}`);
       return res.status(404).json({ error: "Guest not found" });
     }
 
-    // Upload selfie to R2
+    // Upload selfie to R2 using the guestId from frontend (Apps Script's hash)
     await r2.uploadSelfie(guestId, req.file.buffer);
 
     // Mark selfie received in sheet
@@ -486,7 +485,7 @@ app.post("/api/upload-selfie", upload.single("selfie"), async (req, res) => {
     // Clear Rekognition cache so this selfie is used in future matching
     rekognition.clearCache();
 
-    console.log(`[Selfie] Uploaded for ${matched.mainName} (partner: ${isPartnerRow}) -> ${guestId}`);
+    console.log(`[Selfie] Uploaded for ${isPartnerRow ? matched.partnerName : matched.mainName} (partner: ${isPartnerRow}) -> ${guestId}`);
     res.json({ success: true, guestId });
   } catch (e) {
     console.error("[Selfie] Error:", e);

@@ -6,6 +6,7 @@ const SHEET_NAME = process.env.GOOGLE_SHEET_NAME || "Sheet3";
 // Column indices (0-based) from the spreadsheet
 const COL = {
   PARTNER_NAME: 10, // K - nombre pareja
+  PARTNER_DNI: 11, // L - DNI pareja
   MAIN_NAME: 13, // N - nombre principal
   MAIN_DNI: 14, // O - DNI principal
   MAIN_PHONE: 15, // P - teléfono principal
@@ -64,8 +65,11 @@ async function getAllGuests() {
     const row = rows[i];
     const mainName = (row[COL.MAIN_NAME] || "").trim();
     const partnerName = (row[COL.PARTNER_NAME] || "").trim();
+    const mainDni = (row[COL.MAIN_DNI] || "").toString().trim();
+    const partnerDni = (row[COL.PARTNER_DNI] || "").toString().trim();
     const mainPhone = (row[COL.MAIN_PHONE] || "").trim();
     const guestId = (row[COL_EXTRA.GUEST_ID] || "").trim();
+    const partnerGuestId = (row[COL_EXTRA.PARTNER_GUEST_ID] || "").trim();
     const selfieMain = (row[COL_EXTRA.SELFIE_MAIN] || "").trim();
     const selfiePartner = (row[COL_EXTRA.SELFIE_PARTNER] || "").trim();
     const partnerPhone = (row[COL_EXTRA.PARTNER_PHONE] || "").trim();
@@ -76,9 +80,12 @@ async function getAllGuests() {
       rowIndex: i + 2, // 1-based, skip header
       mainName,
       partnerName,
+      mainDni,
+      partnerDni,
       mainPhone: normalizePhone(mainPhone),
       partnerPhone: normalizePhone(partnerPhone),
       guestId,
+      partnerGuestId,
       selfieMain: selfieMain === "SI",
       selfiePartner: selfiePartner === "SI",
     });
