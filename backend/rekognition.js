@@ -4,6 +4,32 @@ const {
 } = require("@aws-sdk/client-rekognition");
 const r2 = require("./r2");
 
+// Sharp is optional - only used to shrink images > 5MB
+let sharp = null;
+try { sharp = require("sharp"); } catch (e) {}
+
+const REKOGNITION_MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+
+async function shrinkForRekognition(buffer) {
+  if (buffer.length <= REKOGNITION_MAX_BYTES) return buffer;
+  if (!sharp) return buffer; // can't shrink, will error
+  // Progressive resize until under 5MB
+  for (const maxW of [1920, 1280, 960, 720]) {
+    const out = await sharp(buffer)
+      .rotate()
+      .resize({ width: maxW, withoutEnlargement: true })
+      .jpeg({ quality: 85, mozjpeg: true })
+      .toBuffer();
+    if (out.length <= REKOGNITION_MAX_BYTES) return out;
+  }
+  // Last attempt with lower quality
+  return await sharp(buffer)
+    .rotate()
+    .resize({ width: 720, withoutEnlargement: true })
+    .jpeg({ quality: 70, mozjpeg: true })
+    .toBuffer();
+}
+
 const rekClient = new RekognitionClient({
   region: process.env.AWS_REGION || "us-east-1",
   credentials: {
@@ -21,9 +47,10 @@ async function loadSelfie(guestId) {
   if (selfieCache.has(guestId)) return selfieCache.get(guestId);
 
   try {
-    const buffer = await r2.getFile(`selfies/${guestId}.jpg`);
+    const raw = await r2.getFile(`selfies/${guestId}.jpg`);
     // Verify it's a real JPEG
-    if (buffer[0] === 0xFF && buffer[1] === 0xD8) {
+    if (raw[0] === 0xFF && raw[1] === 0xD8) {
+      const buffer = await shrinkForRekognition(raw);
       selfieCache.set(guestId, buffer);
       return buffer;
     }
@@ -52,11 +79,19 @@ async function compareFaces(photoBuffer, selfieBuffer) {
   }
 }
 
+// Cache shrunken photo buffer per matchPhoto call
+async function ensureSize(buffer) {
+  return shrinkForRekognition(buffer);
+}
+
 // Match a photo against all known selfies in parallel (batched)
 // Returns array of matched guestIds
 async function matchPhoto(photoBuffer, guestSelfieIds) {
   const BATCH_SIZE = 10; // Parallel comparisons per batch
   const matches = [];
+
+  // Shrink photo once if needed (Rekognition limit 5MB)
+  const photoForRekognition = await ensureSize(photoBuffer);
 
   for (let i = 0; i < guestSelfieIds.length; i += BATCH_SIZE) {
     const batch = guestSelfieIds.slice(i, i + BATCH_SIZE);
@@ -64,7 +99,7 @@ async function matchPhoto(photoBuffer, guestSelfieIds) {
       batch.map(async (guestId) => {
         const selfieBuffer = await loadSelfie(guestId);
         if (!selfieBuffer) return null;
-        const isMatch = await compareFaces(photoBuffer, selfieBuffer);
+        const isMatch = await compareFaces(photoForRekognition, selfieBuffer);
         return isMatch ? guestId : null;
       })
     );
