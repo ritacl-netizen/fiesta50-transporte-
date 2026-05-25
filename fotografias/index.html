@@ -429,10 +429,10 @@
         <img id="selfie-preview" style="width: 180px; height: 180px; object-fit: cover; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2);">
       </div>
 
-      <label style="display: block; margin-bottom: 12px;">
-        <input type="file" id="selfieFile" accept="image/*" capture="user" style="display: none;">
-        <span class="btn" style="display: inline-block; cursor: pointer; margin: 0;" onclick="document.getElementById('selfieFile').click()">Tomar / Elegir foto</span>
-      </label>
+      <div style="margin-bottom: 12px;">
+        <input type="file" id="selfieFile" accept="image/*" style="display: none;">
+        <button type="button" class="btn" style="margin: 0;" onclick="document.getElementById('selfieFile').click()">Elegir foto</button>
+      </div>
 
       <button class="btn" id="uploadSelfieBtn" style="display:none" onclick="uploadSelfie()">Subir selfie</button>
 
@@ -590,17 +590,30 @@
     }
 
     document.getElementById('selfieFile').addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
+      const file = e.target.files && e.target.files[0];
+      if (!file) {
+        console.log('[Selfie] No file selected');
+        return;
+      }
+      console.log('[Selfie] File selected:', file.name, file.size, 'bytes');
       pendingSelfie = file;
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const img = document.getElementById('selfie-preview');
-        img.src = ev.target.result;
-        document.getElementById('selfie-preview-wrap').style.display = 'block';
-        document.getElementById('uploadSelfieBtn').style.display = 'block';
-      };
-      reader.readAsDataURL(file);
+
+      // Show upload button immediately regardless of preview
+      document.getElementById('uploadSelfieBtn').style.display = 'block';
+
+      // Try to show preview (non-blocking)
+      try {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const img = document.getElementById('selfie-preview');
+          img.src = ev.target.result;
+          document.getElementById('selfie-preview-wrap').style.display = 'block';
+        };
+        reader.onerror = (err) => console.log('[Selfie] Preview error:', err);
+        reader.readAsDataURL(file);
+      } catch (e) {
+        console.log('[Selfie] Preview failed, continuing without preview:', e);
+      }
     });
 
     async function compressSelfie(file, maxW = 1024, quality = 0.9) {
