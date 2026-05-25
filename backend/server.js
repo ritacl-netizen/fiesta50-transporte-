@@ -426,6 +426,74 @@ app.options("/api/upload", (req, res) => {
   res.sendStatus(204);
 });
 
+// Guest selfie upload - any guest can upload their own selfie
+app.options("/api/upload-selfie", (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, X-Guest-Id, X-Ci");
+  res.sendStatus(204);
+});
+
+app.post("/api/upload-selfie", upload.single("selfie"), async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+
+  try {
+    const guestId = req.header("X-Guest-Id");
+    const ci = req.header("X-Ci");
+
+    if (!guestId || !ci) {
+      return res.status(400).json({ error: "Missing X-Guest-Id or X-Ci header" });
+    }
+    if (!req.file) {
+      return res.status(400).json({ error: "No selfie file uploaded" });
+    }
+
+    // Verify this guest exists in sheets (using CI for double check)
+    const guests = await sheets.getAllGuests();
+    let matched = null;
+    let isPartnerRow = false;
+    for (const g of guests) {
+      // Check if CI matches main or partner
+      // We need the raw row to compare; getAllGuests already exposes name+guestId
+      if (g.guestId === guestId) {
+        matched = g;
+        isPartnerRow = false;
+        break;
+      }
+      if (g.partnerName && generateGuestId(g.partnerName) === guestId) {
+        matched = g;
+        isPartnerRow = true;
+        break;
+      }
+    }
+
+    if (!matched) {
+      return res.status(404).json({ error: "Guest not found" });
+    }
+
+    // Upload selfie to R2
+    await r2.uploadSelfie(guestId, req.file.buffer);
+
+    // Mark selfie received in sheet
+    await sheets.markSelfieReceived(matched.rowIndex, isPartnerRow);
+    if (isPartnerRow) {
+      // Save partner guest ID for future logins
+      await sheets.setPartnerGuestId(matched.rowIndex, guestId);
+    } else if (!matched.guestId) {
+      await sheets.setGuestId(matched.rowIndex, guestId);
+    }
+
+    // Clear Rekognition cache so this selfie is used in future matching
+    rekognition.clearCache();
+
+    console.log(`[Selfie] Uploaded for ${matched.mainName} (partner: ${isPartnerRow}) -> ${guestId}`);
+    res.json({ success: true, guestId });
+  } catch (e) {
+    console.error("[Selfie] Error:", e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Bulk upload photos (admin only)
 // POST /api/upload?source=whatsapp|pro|mas with multipart form + X-Admin-Password header
 // - whatsapp: uploaded + face matched

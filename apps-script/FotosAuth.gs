@@ -14,8 +14,10 @@ const COL_MAIN_DNI = 15;       // O
 const COL_MAIN_PHONE = 16;     // P
 const COL_PARTNER_DNI = 12;    // L
 const COL_GUEST_ID = 50;       // AX - [BOT] Guest ID
+const COL_SELFIE_MAIN = 51;    // AY - [BOT] Selfie Principal
+const COL_SELFIE_PARTNER = 52; // AZ - [BOT] Selfie Pareja
 const COL_PARTNER_PHONE = 53;  // BA - [BOT] Tel Pareja
-const COL_PARTNER_GUEST_ID = 57; // BE - [BOT] Partner Guest ID
+const COL_PARTNER_GUEST_ID = 56; // BD - [BOT] Partner Guest ID
 
 function doGet(e) {
   var ci = (e && e.parameter && e.parameter.ci) || '';
@@ -75,10 +77,13 @@ function doAuth(ci, phone4) {
         });
       }
       if (mainPhone.slice(-4) === phone4) {
+        var selfieFlag = String(values[i][COL_SELFIE_MAIN - 1]).trim();
         return jsonResponse({
           success: true,
           name: mainName,
-          guestId: guestId || generateGuestId(mainName)
+          guestId: guestId || generateGuestId(mainName),
+          hasSelfie: selfieFlag === 'SI',
+          isPartner: false
         });
       } else {
         return jsonResponse({
@@ -96,10 +101,14 @@ function doAuth(ci, phone4) {
         });
       }
       if (partnerPhone.slice(-4) === phone4) {
+        var selfieFlag = String(values[i][COL_SELFIE_PARTNER - 1]).trim();
         return jsonResponse({
           success: true,
           name: partnerName,
-          guestId: partnerGuestId || generateGuestId(partnerName)
+          guestId: partnerGuestId || generateGuestId(partnerName),
+          hasSelfie: selfieFlag === 'SI',
+          isPartner: true,
+          rowIndex: i + 2
         });
       } else {
         return jsonResponse({

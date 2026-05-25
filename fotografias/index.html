@@ -416,6 +416,32 @@
     </div>
   </div>
 
+  <!-- SELFIE UPLOAD -->
+  <div class="login-container" id="selfie-view" style="display:none">
+    <div class="card" style="max-width: 460px;">
+      <h1>Tu Selfie</h1>
+      <p class="subtitle" id="selfie-greeting"></p>
+      <p style="font-size: 0.9rem; opacity: 0.7; margin-bottom: 24px; line-height: 1.5;">
+        Para armar tu album personalizado, necesitamos una selfie tuya. La usamos para identificarte en las fotos del evento.
+      </p>
+
+      <div id="selfie-preview-wrap" style="margin-bottom: 16px; display: none;">
+        <img id="selfie-preview" style="width: 180px; height: 180px; object-fit: cover; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2);">
+      </div>
+
+      <label style="display: block; margin-bottom: 12px;">
+        <input type="file" id="selfieFile" accept="image/*" capture="user" style="display: none;">
+        <span class="btn" style="display: inline-block; cursor: pointer; margin: 0;" onclick="document.getElementById('selfieFile').click()">Tomar / Elegir foto</span>
+      </label>
+
+      <button class="btn" id="uploadSelfieBtn" style="display:none" onclick="uploadSelfie()">Subir selfie</button>
+
+      <div class="message" id="selfie-msg"></div>
+
+      <a href="#" class="back-link" id="selfie-logout">Salir</a>
+    </div>
+  </div>
+
   <!-- GALLERY -->
   <div id="gallery-view">
     <div class="gallery-header">
@@ -483,7 +509,12 @@
     // Check session
     const saved = sessionStorage.getItem('myn50_guest');
     if (saved) {
-      showGallery(JSON.parse(saved));
+      const g = JSON.parse(saved);
+      if (g.hasSelfie === false) {
+        showSelfieUpload(g);
+      } else {
+        showGallery(g);
+      }
     }
 
     // Login
@@ -511,9 +542,18 @@
         const res = await fetch(`${FOTOS_AUTH_URL}?ci=${ci}&phone4=${phone4}`);
         const result = await res.json();
         if (result.success) {
-          const guest = { name: result.name, guestId: result.guestId };
+          const guest = {
+            name: result.name,
+            guestId: result.guestId,
+            ci: ci,
+            hasSelfie: result.hasSelfie === true,
+          };
           sessionStorage.setItem('myn50_guest', JSON.stringify(guest));
-          showGallery(guest);
+          if (!guest.hasSelfie) {
+            showSelfieUpload(guest);
+          } else {
+            showGallery(guest);
+          }
         } else {
           showMsg(result.message, 'error');
         }
@@ -530,6 +570,119 @@
       el.textContent = text;
       el.className = 'message ' + type;
       el.style.display = 'block';
+    }
+
+    // --- SELFIE UPLOAD ---
+    let pendingSelfie = null;
+
+    function showSelfieUpload(guest) {
+      document.getElementById('login-view').style.display = 'none';
+      const view = document.getElementById('selfie-view');
+      view.style.display = 'flex';
+      view.style.alignItems = 'center';
+      view.style.justifyContent = 'center';
+      document.getElementById('selfie-greeting').textContent = `Hola, ${guest.name}`;
+      document.getElementById('selfie-logout').onclick = (e) => {
+        e.preventDefault();
+        sessionStorage.removeItem('myn50_guest');
+        window.location.reload();
+      };
+    }
+
+    document.getElementById('selfieFile').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      pendingSelfie = file;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = document.getElementById('selfie-preview');
+        img.src = ev.target.result;
+        document.getElementById('selfie-preview-wrap').style.display = 'block';
+        document.getElementById('uploadSelfieBtn').style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    });
+
+    async function compressSelfie(file, maxW = 1024, quality = 0.9) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          img.onload = () => {
+            let { width, height } = img;
+            if (width > maxW) {
+              height = Math.round(height * (maxW / width));
+              width = maxW;
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            canvas.toBlob((blob) => {
+              resolve(blob ? new File([blob], 'selfie.jpg', { type: 'image/jpeg' }) : file);
+            }, 'image/jpeg', quality);
+          };
+          img.onerror = () => resolve(file);
+          img.src = e.target.result;
+        };
+        reader.onerror = () => resolve(file);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function uploadSelfie() {
+      if (!pendingSelfie) return;
+      const guest = JSON.parse(sessionStorage.getItem('myn50_guest'));
+      const msgEl = document.getElementById('selfie-msg');
+      const btn = document.getElementById('uploadSelfieBtn');
+
+      msgEl.className = 'message'; msgEl.style.display = 'none';
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Subiendo...';
+
+      try {
+        const compressed = await compressSelfie(pendingSelfie);
+        const formData = new FormData();
+        formData.append('selfie', compressed);
+
+        const res = await fetch(`${BACKEND_URL}/api/upload-selfie`, {
+          method: 'POST',
+          headers: {
+            'X-Guest-Id': guest.guestId,
+            'X-Ci': guest.ci || '',
+          },
+          body: formData,
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || 'Error en el servidor');
+        }
+
+        // Update session
+        guest.hasSelfie = true;
+        sessionStorage.setItem('myn50_guest', JSON.stringify(guest));
+
+        // Show success and message
+        msgEl.textContent = '';
+        document.querySelector('#selfie-view .card').innerHTML = `
+          <h1>Listo!</h1>
+          <p class="subtitle">Selfie recibida</p>
+          <p style="font-size: 0.95rem; opacity: 0.85; margin-bottom: 24px; line-height: 1.6;">
+            Gracias ${guest.name}! Ya tenemos tu selfie.<br><br>
+            En las proximas horas vamos a identificarte en todas las fotos del evento y armar tu album personalizado.<br><br>
+            <strong>Volve en 24 horas</strong> y vas a tener tus fotos.
+          </p>
+          <button class="btn" onclick="window.location.reload()">Volver</button>
+        `;
+      } catch (e) {
+        msgEl.textContent = 'Error: ' + e.message;
+        msgEl.className = 'message error';
+        msgEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Subir selfie';
+      }
     }
 
     // Gallery
