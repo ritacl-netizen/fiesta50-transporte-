@@ -447,10 +447,10 @@
       <p class="gallery-greeting" id="greeting"></p>
 
       <div class="filters">
-        <button class="filter-btn active" data-filter="mine-whatsapp" onclick="setFilter('mine-whatsapp')">
+        <button class="filter-btn" data-filter="mine-whatsapp" onclick="setFilter('mine-whatsapp')">
           Mis WhatsApp <span class="filter-count" id="count-mine-whatsapp"></span>
         </button>
-        <button class="filter-btn" data-filter="mine-pro" onclick="setFilter('mine-pro')">
+        <button class="filter-btn active" data-filter="mine-pro" onclick="setFilter('mine-pro')">
           Mis Pro <span class="filter-count" id="count-mine-pro"></span>
         </button>
         <button class="filter-btn" data-filter="mas" onclick="setFilter('mas')">
@@ -499,7 +499,7 @@
 
     let myPhotos = { whatsapp: [], pro: [] };
     let allPhotos = { whatsapp: [], pro: [], mas: [] };
-    let currentFilter = 'mine-whatsapp';
+    let currentFilter = 'mine-pro';
     let currentPhotos = [];
     let currentIndex = 0;
     const YOUTUBE_VIDEO_ID = 'mVk03x36o7M';
@@ -740,7 +740,7 @@
         document.getElementById('count-mas').textContent = allPhotos.mas.length || '(proximamente)';
 
         document.getElementById('loading').style.display = 'none';
-        setFilter('mine-whatsapp');
+        setFilter('mine-pro');
       } catch (e) {
         document.getElementById('loading').style.display = 'none';
         document.getElementById('no-photos').style.display = 'block';
