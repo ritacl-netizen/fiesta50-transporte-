@@ -382,6 +382,10 @@
       grid.querySelectorAll('img[data-src]').forEach(img => observer.observe(img));
     }
 
+    function isMobile() {
+      return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    }
+
     async function downloadPhoto(photo) {
       const url = `${R2_URL}/${photo.prefix}/${photo.id}.jpg`;
       const filename = `myn50-${photo.source}-${photo.id}.jpg`;
@@ -389,14 +393,16 @@
       try {
         const res = await fetch(url);
         const blob = await res.blob();
-        const file = new File([blob], filename, { type: 'image/jpeg' });
 
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({ files: [file], title: 'MYN50 Foto' });
-            return;
-          } catch (e) {
-            if (e.name === 'AbortError') return;
+        if (isMobile() && navigator.canShare) {
+          const file = new File([blob], filename, { type: 'image/jpeg' });
+          if (navigator.canShare({ files: [file] })) {
+            try {
+              await navigator.share({ files: [file], title: 'MYN50 Foto' });
+              return;
+            } catch (e) {
+              if (e.name === 'AbortError') return;
+            }
           }
         }
 
@@ -404,12 +410,15 @@
         const a = document.createElement('a');
         a.href = objectUrl;
         a.download = filename;
-        a.target = '_blank';
+        a.style.display = 'none';
         document.body.appendChild(a);
         a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(objectUrl);
+        }, 1000);
       } catch (e) {
+        console.error('Download error:', e);
         window.open(url, '_blank');
       }
     }

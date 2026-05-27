@@ -878,6 +878,10 @@
     }
 
     // Download
+    function isMobile() {
+      return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    }
+
     async function downloadPhoto(photo) {
       const url = `${R2_URL}/${photo.prefix}/${photo.id}.jpg`;
       const filename = `myn50-${photo.id}.jpg`;
@@ -885,31 +889,36 @@
       try {
         const res = await fetch(url);
         const blob = await res.blob();
-        const file = new File([blob], filename, { type: 'image/jpeg' });
 
-        // Try Web Share API first (best on mobile - lets user save to Photos)
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({ files: [file], title: 'MYN50 Foto' });
-            return;
-          } catch (e) {
-            // User cancelled or error - fall through to download
-            if (e.name === 'AbortError') return;
+        // Mobile: try Web Share API (lets user save to Photos)
+        if (isMobile() && navigator.canShare) {
+          const file = new File([blob], filename, { type: 'image/jpeg' });
+          if (navigator.canShare({ files: [file] })) {
+            try {
+              await navigator.share({ files: [file], title: 'MYN50 Foto' });
+              return;
+            } catch (e) {
+              if (e.name === 'AbortError') return;
+              // otherwise fall through to download
+            }
           }
         }
 
-        // Fallback: classic download link
+        // Desktop / fallback: classic download link
         const objectUrl = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = objectUrl;
         a.download = filename;
-        a.target = '_blank'; // helps on some mobile browsers
+        a.style.display = 'none';
         document.body.appendChild(a);
         a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(objectUrl);
+        }, 1000);
       } catch (e) {
-        // Last resort: open in new tab so user can long-press save
+        console.error('Download error:', e);
+        // Last resort: open in new tab so user can right-click/long-press save
         window.open(url, '_blank');
       }
     }
