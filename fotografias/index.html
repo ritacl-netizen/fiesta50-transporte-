@@ -880,13 +880,38 @@
     // Download
     async function downloadPhoto(photo) {
       const url = `${R2_URL}/${photo.prefix}/${photo.id}.jpg`;
-      const res = await fetch(url);
-      const blob = await res.blob();
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `${photo.id}.jpg`;
-      a.click();
-      URL.revokeObjectURL(a.href);
+      const filename = `myn50-${photo.id}.jpg`;
+
+      try {
+        const res = await fetch(url);
+        const blob = await res.blob();
+        const file = new File([blob], filename, { type: 'image/jpeg' });
+
+        // Try Web Share API first (best on mobile - lets user save to Photos)
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({ files: [file], title: 'MYN50 Foto' });
+            return;
+          } catch (e) {
+            // User cancelled or error - fall through to download
+            if (e.name === 'AbortError') return;
+          }
+        }
+
+        // Fallback: classic download link
+        const objectUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = objectUrl;
+        a.download = filename;
+        a.target = '_blank'; // helps on some mobile browsers
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      } catch (e) {
+        // Last resort: open in new tab so user can long-press save
+        window.open(url, '_blank');
+      }
     }
 
     // Keyboard + swipe

@@ -384,13 +384,34 @@
 
     async function downloadPhoto(photo) {
       const url = `${R2_URL}/${photo.prefix}/${photo.id}.jpg`;
-      const res = await fetch(url);
-      const blob = await res.blob();
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `${photo.source}-${photo.id}.jpg`;
-      a.click();
-      URL.revokeObjectURL(a.href);
+      const filename = `myn50-${photo.source}-${photo.id}.jpg`;
+
+      try {
+        const res = await fetch(url);
+        const blob = await res.blob();
+        const file = new File([blob], filename, { type: 'image/jpeg' });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({ files: [file], title: 'MYN50 Foto' });
+            return;
+          } catch (e) {
+            if (e.name === 'AbortError') return;
+          }
+        }
+
+        const objectUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = objectUrl;
+        a.download = filename;
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      } catch (e) {
+        window.open(url, '_blank');
+      }
     }
 
     function openLightbox(index) {
